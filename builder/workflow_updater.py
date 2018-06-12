@@ -29,8 +29,12 @@ def parse_yaml(config):
         basement = basement_branch
 
         for rebuild_config in config[basement_branch]:
-            branch_to_rebuild = list(rebuild_config.keys())[0]
-            cherry_picks = list(rebuild_config.values())[0]
+            if '~' in rebuild_config: # short form without list to commit
+                branch_to_rebuild = rebuild_config[:rebuild_config.index('~')]
+                cherry_picks = [rebuild_config]
+            else:
+                branch_to_rebuild = list(rebuild_config.keys())[0]
+                cherry_picks = list(rebuild_config.values())[0]
 
             parsed_config.append({
                 OUTPUT : branch_to_rebuild,
