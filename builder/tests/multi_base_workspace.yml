@@ -1,10 +1,13 @@
 # workspace config with multiple basement branches example:
-master: # basement branch, on top of which will be assembled dev
+- master: # basement branch, on top of which will be assembled dev
   - dev: # branch to assemble on top of 'master'
     - dev~0 # that consists of its head~0 commit
 
-dev: # another basement branch, on top of which will be assembled feature branches
+- dev: # another basement branch, on top of which will be assembled feature branches
   - feature_1: # branch to assemble on top of 'dev'
     - feature_1~2 # that consists of 3 commits
     - feature_1~1 # which applied one by one
     - feature_1~0 # from oldest to newest
+
+- master: # another master used as basement branch, on top of which will be assembled hotfix
+  - hotfix~0

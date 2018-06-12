@@ -1,5 +1,5 @@
 # workspace with single basement branch config example:
-master: # basement branch, on top of which all other will be assembled
+- master: # basement branch, on top of which all other will be assembled
   - dev: # first branch to assemble on top of 'master'
     - dev~0 # that consists of its head~0 commit
 

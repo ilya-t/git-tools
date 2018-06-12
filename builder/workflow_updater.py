@@ -25,25 +25,51 @@ def start_flow(config):
 
 def parse_yaml(config):
     parsed_config = []
-    for basement_branch in config.keys():
-        basement = basement_branch
 
-        for rebuild_config in config[basement_branch]:
-            if '~' in rebuild_config: # short form without list to commit
-                branch_to_rebuild = rebuild_config[:rebuild_config.index('~')]
-                cherry_picks = [rebuild_config]
-            else:
-                branch_to_rebuild = list(rebuild_config.keys())[0]
-                cherry_picks = list(rebuild_config.values())[0]
+    print("config:")
+    print(config)
+    # [
+    #   {'master': [{'dev': ['dev~0']}]},
+    #   {'dev': [
+    #               {'feature_1': ['feature_1~2', 'feature_1~1', 'feature_1~0']}]
+    #   },
+    #   {'master': ['hotfix~0']}
+    # ]
 
-            parsed_config.append({
-                OUTPUT : branch_to_rebuild,
-                BASEMENT : basement,
-                CHANGES : cherry_picks
-            })
-            basement = branch_to_rebuild
+    for basement in config:
+        print('basement:')
+        print(basement)
+        basement_branch = list(basement.keys())[0]
+        basement_config = list(basement.values())[0]
+
+        parsed_config.extend(extract_rebuild_configs(
+            config=basement_config,
+            basement=basement_branch)
+        )
+
 
     return parsed_config
+
+
+def extract_rebuild_configs(config, basement):
+    """Return the absolute version of a path."""
+    results = []
+    for rebuild_config in config:
+        if '~' in rebuild_config:  # short form without list to commit
+            branch_to_rebuild = rebuild_config[:rebuild_config.index('~')]
+            cherry_picks = [rebuild_config]
+        else:
+            branch_to_rebuild = list(rebuild_config.keys())[0]
+            cherry_picks = list(rebuild_config.values())[0]
+
+        results.append({
+            OUTPUT: branch_to_rebuild,
+            BASEMENT: basement,
+            CHANGES: cherry_picks
+        })
+        basement = branch_to_rebuild
+
+    return results
 
 
 def log(msg):

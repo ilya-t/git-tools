@@ -28,3 +28,8 @@ git add * && git commit --message 'add "f1_file"'
 git checkout -b feature_2
 echo "f2 initial state" > f2_file
 git add * && git commit --message 'add "f2_file"'
+
+# hotfix commits
+git checkout -b hotfix master
+echo "hotfix initial state" > hotfix_file
+git add * && git commit --message 'add "hotfix_file"'
