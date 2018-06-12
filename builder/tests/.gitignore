@@ -1,0 +1,5 @@
+repo
+test.log
+__pycache__
+.idea
+*.pyc

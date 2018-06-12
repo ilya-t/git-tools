@@ -1,0 +1,12 @@
+# workspace with single basement branch config example:
+master: # basement branch, on top of which all other will be assembled
+  - dev: # first branch to assemble on top of 'master'
+    - dev~0 # that consists of its head~0 commit
+
+  - feature_1: # second branch to assemble on top of 'dev'
+    - feature_1~2 # that consists of 3 commits
+    - feature_1~1 # which applied one by one
+    - feature_1~0 # from oldest to newest
+
+  - feature_2: # third branch to assemble on top of 'feature_1'
+    - feature_2 # that consists of its head~0 commit
