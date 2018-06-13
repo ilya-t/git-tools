@@ -5,7 +5,8 @@ import subprocess
 import unittest
 import cherry_picker
 
-TEST_DIR = os.path.abspath(os.path.dirname(__file__)) + '/tests'
+TEST_DIR = os.path.dirname(os.path.dirname(__file__)) + '/tests'
+
 REPO_DIR = TEST_DIR + '/repo'
 TEST_LOG_FILE = TEST_DIR + '/test.log'
 

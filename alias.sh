@@ -1,5 +1,5 @@
 #!/bin/sh
-
-alias git-build="python3 $PWD/builder/workflow_updater.py "
-alias git-clean="python $PWD/cleaner/main.py"
-alias git-review="$PWD/reviewer/run.sh"
+SCRIPT_DIR=$1
+alias git-build="python3 $SCRIPT_DIR/builder/workflow_updater.py "
+alias git-clean="python $SCRIPT_DIR/cleaner/main.py"
+alias git-review="$SCRIPT_DIR/reviewer/run.sh"
