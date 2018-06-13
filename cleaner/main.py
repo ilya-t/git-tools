@@ -12,7 +12,7 @@ from colorama import Fore
 import config
 
 
-LOG_FILE = file(name='delete.log', mode='a')
+LOG_FILE = file(name=os.path.dirname(__file__)+'/delete.log', mode='a')
 
 def find_dot_git(path):
     candidate = os.path.abspath(path)
