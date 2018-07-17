@@ -26,7 +26,7 @@ class Picker:
     def run(self, target_branch, basement_branch='origin/master', branches_to_cherry_pick=[]):
         if self.upToDate(target_branch, basement_branch, branches_to_cherry_pick):
             print('Branch "'+target_branch+'" already up-to-date with basement "'+basement_branch+'"')
-            return
+            return False
 
         tmp_branch = 'tmp/' + target_branch
         self.run_cmd('git checkout ' + basement_branch, print_output=False)
@@ -56,10 +56,12 @@ class Picker:
             self.log('Branch rebased: ' + target_branch + ' (on top of ' + basement_branch + ')')
             self.log('=========================================')
             print('Done! You are now on: ' + target_branch + ' (on top of ' + basement_branch + ')\n')
+            return True
         else:
             self.print('Cleaning temporary branch: ' + tmp_branch)
             self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch)
             self.print('Done!')
+            return True
 
     def upToDate(self, target_branch, basement_branch, branches_to_cherry_pick):
         current_basement = target_branch + '~'+ (len(branches_to_cherry_pick)).__str__()

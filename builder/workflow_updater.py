@@ -15,30 +15,27 @@ LOG_FILE = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log'
 
 def start_flow(config):
     log('\n==== Updating branches at: {} ===='.format(CWD))
+    affected = []
 
     for item in config:
-        cherry_picker.Picker(cwd=CWD,
+        result = cherry_picker.Picker(cwd=CWD,
                              suppress_prompts=SUPPRESS_PROMPTS_FOR_TESTS,
                              verbose_ouput=False)\
             .run(item[OUTPUT], item[BASEMENT], item[CHANGES])
+
+        if (result):
+            affected.append(item[OUTPUT])
+
+    print('All Done! How about to push changes?')
+    for branch in affected:
+        print('    git push origin '+branch+':'+branch+' --force')
+    print('')
 
 
 def parse_yaml(config):
     parsed_config = []
 
-    print("config:")
-    print(config)
-    # [
-    #   {'master': [{'dev': ['dev~0']}]},
-    #   {'dev': [
-    #               {'feature_1': ['feature_1~2', 'feature_1~1', 'feature_1~0']}]
-    #   },
-    #   {'master': ['hotfix~0']}
-    # ]
-
     for basement in config:
-        print('basement:')
-        print(basement)
         basement_branch = list(basement.keys())[0]
         basement_config = list(basement.values())[0]
 
