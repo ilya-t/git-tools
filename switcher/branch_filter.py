@@ -4,42 +4,59 @@ import os
 import subprocess
 
 SOURCE_LOCAL = 'locally checked branches'
-SOURCE_REMOTE = 'all remote branches' #no supported yet
+SOURCE_REMOTE = 'all remote branches'  # no supported yet
+
 
 class BranchFilter:
     def __init__(self,
+                 input_provider=lambda : input().lower(),
                  cwd=os.path.abspath('')):
         self.cwd = cwd
+        self.provide_input = input_provider
         branches_str = self.capture_output('git branch')
+        # TODO sorted(key=lambda key: sort_case)
         self.all_branches = branches_str.replace('* ', '').replace(' ', '').splitlines()
+        self.all_branches = sorted(self.all_branches, reverse=True)
+
         self.remaining_branches = list(self.all_branches)
-        self.head_commits = {}
-        self.selected_branches = []
-        self.selection_finished = False
+
+        self.head_commits = {} #map here!
 
         for branch in self.all_branches:
             full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + branch + '~0)')
             fisrt_return = full_commit_log.index('\n')
             self.head_commits[branch] = full_commit_log[0:fisrt_return]
 
+        self.selected_branches = []
+        self.selection_finished = False
+
+    def find_many(self):
+        self.run_flow(
+            flow_message=lambda: self.print_remains_and_selected(),
+            input_handler=lambda input: self.add_remaining_and_check_input(input),
+            finish_criterion=lambda: self.selection_finished
+        )
+
+        return self.selected_branches, self.remaining_branches
+
+    def find_one(self):
+        self.run_flow(
+            flow_message=lambda: self.print_remains_or_selected(),
+            input_handler=lambda input: self.find_single_branch(input),
+            finish_criterion=lambda: len(self.selected_branches) == 1
+        )
+
+        return self.selected_branches[0]
+
     def run_flow(self, flow_message, input_handler, finish_criterion):
         flow_message()
 
-        input_handler(input().lower())
+        input_handler(self.provide_input())
 
         if finish_criterion():
             return
 
         self.run_flow(flow_message, input_handler, finish_criterion)
-
-    def find_many(self):
-        self.run_flow(
-            flow_message = lambda: self.print_remains_and_selected(),
-            input_handler = lambda input: self.add_remaining_and_check_input(input),
-            finish_criterion = lambda: self.selection_finished
-        )
-
-        return self.selected_branches, self.remaining_branches
 
     def add_remaining_and_check_input(self, input):
         for candidate in self.all_branches:
@@ -56,22 +73,14 @@ class BranchFilter:
             self.remaining_branches.remove(candidate)
         self.selection_finished = input == ''
 
-    def find_one(self):
-        self.run_flow(
-            flow_message = lambda: self.print_remains_or_selected(),
-            input_handler = lambda input: self.find_single_branch(input),
-            finish_criterion = lambda: len(self.selected_branches) == 1
-        )
-
-        return self.selected_branches[0]
-
     def find_single_branch(self, input):
         if len(self.selected_branches) == 0:
             filtered_branches = self.all_branches
         else:
             filtered_branches = self.selected_branches
-        self.selected_branches = list(filter(lambda branch: input in self.head_commits[branch].lower() or input in branch.lower(),
-                                             filtered_branches))
+        self.selected_branches = list(
+            filter(lambda branch: input in self.head_commits[branch].lower() or input in branch.lower(),
+                   filtered_branches))
 
     def print_remains_and_selected(self):
         print("\nRemaining:")
@@ -100,13 +109,7 @@ class BranchFilter:
 
         for i in range(0, len(branch_with_max_len) - len(branch)):
             padding_str = padding_str + ' '
-        print(branch + padding_str + ' | ' +self.head_commits[branch])
-
+        print(branch + padding_str + ' | ' + self.head_commits[branch])
 
     def capture_output(self, cmd):
         return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
-
-
-if __name__ == '__main__':
-    print(result)
-pass
