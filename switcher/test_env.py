@@ -8,7 +8,7 @@ TEST_DIR = os.path.dirname(os.path.dirname(__file__)) + '/tests'
 REPO_DIR = TEST_DIR + '/repo'
 
 
-class SwitcherTestCase(TestCase):
+class TestEnvTestCase(TestCase):
     def setUp(self):
         self.test_repo_dir=REPO_DIR
         self.cleanup()

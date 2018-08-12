@@ -17,11 +17,16 @@ def mixed_input(params_queue):
 
 
 def main(args):
-    arg_queue = Queue()
-    for arg in args:
-        arg_queue.put(arg)
+    if args is None:
+        branch_filter = BranchFilter()
+    else:
+        arg_queue = Queue()
+        for arg in args:
+            arg_queue.put(arg)
 
-    checkout_branch = BranchFilter(input_provider=lambda : mixed_input(arg_queue)).find_one()
+        branch_filter = BranchFilter(input_provider=lambda: mixed_input(arg_queue))
+
+    checkout_branch = branch_filter.find_one()
     os.system('git checkout '+ checkout_branch)
     pass
 

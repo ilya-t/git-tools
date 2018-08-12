@@ -5,7 +5,7 @@ import test_env
 from branch_filter import BranchFilter
 
 
-class TestBranchFilter(test_env.SwitcherTestCase):
+class TestBranchFilter(test_env.TestEnvTestCase):
     def setUp(self):
         super().setUp()
         self.input_queue = Queue()
