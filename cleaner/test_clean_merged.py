@@ -13,7 +13,7 @@ import test_env
 TEST_DIR = os.path.dirname(os.path.dirname(__file__)) + '/tests'
 
 REPO_DIR = TEST_DIR + '/repo'
-TEST_LOG_FILE = TEST_DIR + '/delete_test.log'
+TEST_LOG_FILE = REPO_DIR + '/delete_test.log'
 
 
 class CleanMergedTestCase(test_env.TestEnvTestCase):
@@ -25,7 +25,12 @@ class CleanMergedTestCase(test_env.TestEnvTestCase):
             'git merge hotfix --message "hotifx merged after dev"'
         )
 
-        clean_merged.Cleaner(cwd=self.test_repo_dir)
+        clean_merged.Cleaner(
+            cwd=self.test_repo_dir,
+            upstream='master',
+            suppress_prompt=True,
+            log_file=TEST_LOG_FILE
+        ).run()
 
     def test_dev_deleted(self):
         self.assertNotIn('dev', self.capture_cmd_output('git branch'),
@@ -44,6 +49,15 @@ class CleanMergedTestCase(test_env.TestEnvTestCase):
                          'Branch "feature_1" deleted, but shoult be kept!')
         self.assertIn('feature_2', self.capture_cmd_output('git branch'),
                          'Branch "feature_1" deleted, but shoult be kept!')
+
+    def test_log_file_contains_deleted_branches(self):
+        self.assertTrue('Log file is missing!', os.path.isfile(TEST_LOG_FILE))
+
+        with open(TEST_LOG_FILE) as f:
+            contents = str(f.readlines())
+
+            self.assertTrue('hotfix' in contents)
+            self.assertTrue('dev' in contents)
 
     def capture_cmd_output(self, command):
         with subprocess.Popen(command,

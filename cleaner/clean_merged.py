@@ -2,26 +2,74 @@
 import os
 import subprocess
 import sys
-
+import colorama
 
 class Cleaner:
 
     def __init__(self,
                  log_file=os.path.dirname(__file__) + '/delete.log',
                  cwd=os.path.abspath(''),
+                 upstream='origin/master',
+                 suppress_prompt=False
                  ):
         self.log_file = log_file
-        self.cwd = cwd
+        self.cwd = find_dot_git(cwd)
+        self.upstream = upstream
+        self.suppress_prompt = suppress_prompt
 
     def run(self):
-        branches = self.capture_output('git branch')
-        # branches.__str__.trim()
-        branches = branches.split('\n')
+        branches_str = self.capture_output('git branch')
+        self.current_branch = self.capture_output('git rev-parse --abbrev-ref HEAD').splitlines()[0]
+        self.all_branches = branches_str.replace('* ', '').replace(' ', '').splitlines()
+        self.merged_branches = list(filter(self.is_merged, self.all_branches))
+        self.unmerged_branches = list(filter(lambda branch: branch not in self.merged_branches, self.all_branches))
 
-        print(branches)
+        if len(self.merged_branches) == 0:
+            print('All existing branches already merged!')
+
+        self.head_commits = {}
+
+        list(map(self.get_commit, self.all_branches))
+
+        print('Merged to upstream '+self.upstream+':')
+
+        print(colorama.Fore.RED)
+        for merged in self.merged_branches:
+            self.print_branch_desc(merged)
+        print(colorama.Fore.RESET)
+
+        print('Not yet merged to upstream '+self.upstream+':')
+        print(colorama.Fore.GREEN)
+        for branch in self.unmerged_branches:
+            self.print_branch_desc(branch)
+        print(colorama.Fore.RESET)
+
+        if self.suppress_prompt or query_yes_no('Delete merged branches?'):
+            print('\nDeleting:')
+            for merged in self.merged_branches:
+                if merged != self.current_branch:
+                    self.git_branch_minus_D(merged)
+
+    def get_commit(self, branch):
+        full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + branch + '~0)')
+        fisrt_return = full_commit_log.index('\n')
+        self.head_commits[branch] = full_commit_log[0:fisrt_return]
+
+    def is_merged(self, branch):
+        return self.capture_output('git log '+branch+' --not '+self.upstream) == ''
 
     def capture_output(self, cmd):
         return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
+
+    def print_branch_desc(self, branch):
+        branch_with_max_len = max(self.all_branches, key=len)
+        padding_str = ''
+
+        for i in range(0, len(branch_with_max_len) - len(branch)):
+            padding_str = padding_str + ' '
+
+        output = branch + padding_str + ' | ' + self.head_commits[branch]
+        print(output)
 
     def git_branch_minus_D(self, _branch):
         self.run_cmd('git branch -D '+_branch, log_output=True)
@@ -42,9 +90,11 @@ class Cleaner:
                 for line in output:
                     print(line)
 
-            # if log_output:
-                # for line in output:
-                    # log(line)
+
+            if log_output:
+                with open(self.log_file, mode='a') as f:
+                    for line in output:
+                        print(line, file=f)
 
         if result != 0:
             if fallback is None:
@@ -98,16 +148,10 @@ def query_yes_no(question, default='yes'):
 pass
 
 
-def main(args):
-
-    pass
-
-
 if __name__ == '__main__':
-    args = sys.argv[1:] if len(sys.argv) > 1 else None
-    # main(args)
-    Cleaner(cwd='/home/i-ts/workspace/git-tools/tests/repo').run()
+    args = sys.argv[1:]
 
-
-def clean(cwd):
-    return None
+    if len(sys.argv) > 1:
+        Cleaner(upstream=args[0]).run()
+    else:
+        Cleaner(cwd='/home/i-ts/workspace/browser-android/browser').run()
