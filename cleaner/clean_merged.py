@@ -2,7 +2,8 @@
 import os
 import subprocess
 import sys
-import colorama
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)+'/../switcher'))
+import branch_filter
 
 class Cleaner:
 
@@ -10,66 +11,39 @@ class Cleaner:
                  log_file=os.path.dirname(__file__) + '/delete.log',
                  cwd=os.path.abspath(''),
                  upstream='origin/master',
-                 suppress_prompt=False
+                 suppress_prompt=False,
+                 input_provider=lambda : input().lower(),
                  ):
         self.log_file = log_file
         self.cwd = find_dot_git(cwd)
         self.upstream = upstream
         self.suppress_prompt = suppress_prompt
+        self.input_provider = input_provider
 
     def run(self):
-        branches_str = self.capture_output('git branch')
         self.current_branch = self.capture_output('git rev-parse --abbrev-ref HEAD').splitlines()[0]
-        self.all_branches = branches_str.replace('* ', '').replace(' ', '').splitlines()
+        self.all_branches = self.capture_output('git branch').replace('* ', '').replace(' ', '').splitlines()
         self.merged_branches = list(filter(self.is_merged, self.all_branches))
-        self.unmerged_branches = list(filter(lambda branch: branch not in self.merged_branches, self.all_branches))
 
         if len(self.merged_branches) == 0:
-            print('All existing branches already merged!')
+            print('There are no local branches that were merged to upstream('+self.upstream+')!')
+        else:
+            print('Found '+str(len(self.merged_branches))+' branches that were merged to upstream('+self.upstream+')!')
 
-        self.head_commits = {}
+        bfilter = branch_filter.BranchFilter(cwd=self.cwd, input_provider=self.input_provider)
+        bfilter.extend_selected(self.merged_branches)
+        self.merged_branches = bfilter.find_many()
 
-        list(map(self.get_commit, self.all_branches))
-
-        print('Merged to upstream '+self.upstream+':')
-
-        print(colorama.Fore.RED)
+        print('\nDeleting:')
         for merged in self.merged_branches:
-            self.print_branch_desc(merged)
-        print(colorama.Fore.RESET)
-
-        print('Not yet merged to upstream '+self.upstream+':')
-        print(colorama.Fore.GREEN)
-        for branch in self.unmerged_branches:
-            self.print_branch_desc(branch)
-        print(colorama.Fore.RESET)
-
-        if self.suppress_prompt or query_yes_no('Delete merged branches?'):
-            print('\nDeleting:')
-            for merged in self.merged_branches:
-                if merged != self.current_branch:
-                    self.git_branch_minus_D(merged)
-
-    def get_commit(self, branch):
-        full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + branch + '~0)')
-        fisrt_return = full_commit_log.index('\n')
-        self.head_commits[branch] = full_commit_log[0:fisrt_return]
+            if merged != self.current_branch:
+                self.git_branch_minus_D(merged)
 
     def is_merged(self, branch):
         return self.capture_output('git log '+branch+' --not '+self.upstream) == ''
 
     def capture_output(self, cmd):
         return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
-
-    def print_branch_desc(self, branch):
-        branch_with_max_len = max(self.all_branches, key=len)
-        padding_str = ''
-
-        for i in range(0, len(branch_with_max_len) - len(branch)):
-            padding_str = padding_str + ' '
-
-        output = branch + padding_str + ' | ' + self.head_commits[branch]
-        print(output)
 
     def git_branch_minus_D(self, _branch):
         self.run_cmd('git branch -D '+_branch, log_output=True)
@@ -151,7 +125,9 @@ pass
 if __name__ == '__main__':
     args = sys.argv[1:]
 
-    if len(sys.argv) > 1:
-        Cleaner(upstream=args[0]).run()
+    if len(sys.argv) > 2:
+        Cleaner(cwd=args[1], upstream=args[2]).run()
+    elif len(sys.argv) > 1:
+        Cleaner(cwd=args[0]).run()
     else:
-        Cleaner(cwd='/home/i-ts/workspace/browser-android/browser').run()
+        Cleaner(cwd='.').run()

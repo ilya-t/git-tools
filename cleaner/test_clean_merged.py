@@ -7,10 +7,7 @@ import unittest
 import clean_merged
 import test_env
 
-'git checkout master'
-'git merge dev'
-'git merge hotfix --message="this is merge commit"'
-TEST_DIR = os.path.dirname(os.path.dirname(__file__)) + '/tests'
+TEST_DIR = os.path.abspath(os.path.dirname(__file__)+'/../tests')
 
 REPO_DIR = TEST_DIR + '/repo'
 TEST_LOG_FILE = REPO_DIR + '/delete_test.log'
@@ -29,6 +26,7 @@ class CleanMergedTestCase(test_env.TestEnvTestCase):
             cwd=self.test_repo_dir,
             upstream='master',
             suppress_prompt=True,
+            input_provider=lambda : '',
             log_file=TEST_LOG_FILE
         ).run()
 

@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import colorama
 
 SOURCE_LOCAL = 'locally checked branches'
 SOURCE_REMOTE = 'all remote branches'  # no supported yet
@@ -30,6 +31,9 @@ class BranchFilter:
         self.selected_branches = []
         self.selection_finished = False
 
+    def extend_selected(self, selected):
+        self.selected_branches.extend(selected)
+
     def find_many(self):
         self.run_flow(
             flow_message=lambda: self.print_remains_and_selected(),
@@ -37,7 +41,7 @@ class BranchFilter:
             finish_criterion=lambda: self.selection_finished
         )
 
-        return self.selected_branches, self.remaining_branches
+        return self.selected_branches
 
     def find_one(self):
         self.run_flow(
@@ -61,13 +65,13 @@ class BranchFilter:
     def add_remaining_and_check_input(self, input):
         for candidate in self.all_branches:
             if input == '':
-                return
-
-            if input not in self.head_commits[candidate].lower():
-                return
+                continue
 
             if candidate in self.selected_branches:
-                return
+                continue
+            
+            if input not in candidate.lower() and input not in self.head_commits[candidate].lower():
+                continue
 
             self.selected_branches.append(candidate)
             self.remaining_branches.remove(candidate)
@@ -88,8 +92,10 @@ class BranchFilter:
             self.print_branch_desc(branch)
 
         print("\nSelected:")
+        print(colorama.Fore.RED)
         for branch in self.selected_branches:
             self.print_branch_desc(branch)
+        print(colorama.Fore.RESET)
         print('\nType part of branch name or commit message to keep it or empty line to end selection:')
 
     def print_remains_or_selected(self):
