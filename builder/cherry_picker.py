@@ -14,13 +14,17 @@ DRY_RUN = False
 
 class Picker:
     def __init__(self,
-                     log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
+                 log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
+                 input_provider=lambda : input().lower(),
                  cwd=os.path.abspath(''),
                  suppress_prompts=False,
                  verbose_ouput=True):
+        self.input_provider = input_provider
         self.log_file = log_file
         self.cwd = cwd
-        self.suppress_prompts = suppress_prompts
+
+        if suppress_prompts:
+            self.input_provider = lambda : 'yes'
         self.verbose = verbose_ouput
 
     def run(self, target_branch, basement_branch='origin/master', branches_to_cherry_pick=[]):
@@ -133,11 +137,6 @@ class Picker:
 
         The 'answer' return value is one of 'yes' or 'no'.
         '''
-        if self.suppress_prompts:
-            self.print(question)
-            self.print('yes')
-            return 'yes'
-
         valid = {'yes': 'yes', 'y': 'yes', 'ye': 'yes',
                  'no': 'no', 'n': 'no'}
         if default is None:
@@ -151,7 +150,7 @@ class Picker:
 
         while 1:
             sys.stdout.write(question + prompt)
-            choice = input().lower()
+            choice = self.input_provider()
             if default is not None and choice == '':
                 return default
             elif choice in valid.keys():
