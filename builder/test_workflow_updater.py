@@ -114,6 +114,17 @@ class ConflictsTestCase(WorkFlowTestCase):
         self.assertEqual('', self.capture_cmd_output('git diff'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
 
+    def test_cherry_pick_decline_should_stop_flow(self):
+        self.amend(branch = 'dev',amended_file = 'dev_file')
+        self.set_input('no')
+
+        workflow_updater.process_config(test_env.TEST_DIR + '/single_base_workspace.yml',
+                                        input_provider=lambda: self.pop_input())
+
+        self.assertEqual('', self.capture_cmd_output('git diff'))
+        self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
+
+
     def pop_input(self):
         self.assertFalse(self.input_queue.empty(), 'Queue is empty but input requested!')
         input = self.input_queue.get()

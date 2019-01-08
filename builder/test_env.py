@@ -11,8 +11,11 @@ REPO_DIR = TEST_DIR + '/repo'
 TEST_LOG_FILE = TEST_DIR + '/test.log'
 
 
-def repo_picker():
-    return cherry_picker.Picker(log_file=TEST_LOG_FILE,
+def repo_picker(target_branch, basement_branch, branches_to_cherry_pick):
+    return cherry_picker.Picker(target_branch=target_branch,
+                                basement_branch=basement_branch,
+                                branches_to_cherry_pick=branches_to_cherry_pick,
+                                log_file=TEST_LOG_FILE,
                                 cwd=REPO_DIR,
                                 verbose_ouput=True,
                                 input_provider=cherry_picker.always_confirm)

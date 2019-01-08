@@ -16,20 +16,27 @@ def start_flow(config, input_provider):
     affected = []
 
     for item in config:
-        result = cherry_picker.Picker(cwd=CWD,
-                                      log_file=LOG_FILE,
-                                      input_provider=input_provider,
-                                      verbose_ouput=False) \
-            .run(item[OUTPUT], item[BASEMENT], item[CHANGES])
+        picker = cherry_picker.Picker(target_branch=item[OUTPUT], basement_branch=item[BASEMENT],
+                                      branches_to_cherry_pick=item[CHANGES], cwd=CWD, log_file=LOG_FILE,
+                                      input_provider=input_provider, verbose_ouput=False)
 
-        if (result):
+        if picker.upToDate():
+            print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
+                  picker.basement_branch + '"')
+            continue
+
+        result = picker.run()
+
+        if result:
             affected.append(item[OUTPUT])
-
+        else:
+            print('Building cancelled!')
+            return
     if len(affected) > 0:
         print('All Done! How about to push changes?')
 
         for branch in affected:
-            print('    git push origin '+branch+':'+branch+' --force')
+            print('    git push origin ' + branch + ':' + branch + ' --force')
 
     print('')
 
@@ -45,7 +52,6 @@ def parse_yaml(config):
             config=basement_config,
             basement=basement_branch)
         )
-
 
     return parsed_config
 
@@ -76,7 +82,7 @@ def log(msg):
         print(msg, file=log_file)
 
 
-def process_config(yaml_config, input_provider = lambda: input().lower()):
+def process_config(yaml_config, input_provider=lambda: input().lower()):
     with open(yaml_config, 'r') as config_file:
         try:
             config = yaml.load(config_file)

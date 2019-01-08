@@ -16,62 +16,62 @@ def always_confirm():
 
 class Picker:
     def __init__(self,
+                 target_branch,
+                 basement_branch='origin/master',
+                 branches_to_cherry_pick=[],
                  log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
                  input_provider=lambda: input().lower(),
                  cwd=os.path.abspath(''),
                  verbose_ouput=True):
+        self.target_branch = target_branch
+        self.basement_branch = basement_branch
+        self.branches_to_cherry_pick = branches_to_cherry_pick
         self.input_provider = input_provider
         self.log_file = log_file
         self.cwd = cwd
 
         self.verbose = verbose_ouput
 
-    def run(self, target_branch, basement_branch='origin/master', branches_to_cherry_pick=[]):
-        if self.upToDate(target_branch, basement_branch, branches_to_cherry_pick):
-            print('Branch "' + target_branch + '" already up-to-date with basement "' + basement_branch + '"')
-            return False
+    def run(self):
+        return self.cherry_pick()
 
-        tmp_branch = 'tmp/' + target_branch
-        self.run_cmd('git checkout ' + basement_branch, print_output=False)
+    def cherry_pick(self):
+        tmp_branch = 'tmp/' + self.target_branch
+        self.run_cmd('git checkout ' + self.basement_branch, print_output=False)
         self.run_cmd('git branch -D ' + tmp_branch, print_output=False, log_output=True, fallback=lambda: None)
-
-        print('Building at: ' + tmp_branch + ' (based on ' + basement_branch + ')')
+        print('Building at: ' + tmp_branch + ' (based on ' + self.basement_branch + ')')
         print('=========================================')
-        self.print('Branches to cherry-pick: ' + branches_to_cherry_pick.__str__())
-        self.run_cmd('git checkout -b ' + tmp_branch + ' ' + basement_branch)
-
+        self.print('Branches to cherry-pick: ' + self.branches_to_cherry_pick.__str__())
+        self.run_cmd('git checkout -b ' + tmp_branch + ' ' + self.basement_branch)
         cherry_picks = 0
-
-        for line in branches_to_cherry_pick:
+        for line in self.branches_to_cherry_pick:
             if not self.cherry_pick_by_branch(line, tmp_branch):
                 return False
             cherry_picks += 1
-
         print('=========================================')
         print('Assembling complete. Take a look: ')
         # os.system to show pretty output about commits
         self.run_simple_cmd('git log --oneline -' + str(cherry_picks + 1))
         print('=========================================')
-
         if self.query_yes_no('Is branch assembled properly?') == 'yes':
-            self.run_cmd('git branch -D ' + target_branch, log_output=True, print_output=False)
-            self.run_cmd('git checkout -b ' + target_branch)
+            self.run_cmd('git branch -D ' + self.target_branch, log_output=True, print_output=False)
+            self.run_cmd('git checkout -b ' + self.target_branch)
             self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
-            self.log('Branch rebased: ' + target_branch + ' (on top of ' + basement_branch + ')')
+            self.log('Branch rebased: ' + self.target_branch + ' (on top of ' + self.basement_branch + ')')
             self.log('=========================================')
-            print('Done! You are now on: ' + target_branch + ' (on top of ' + basement_branch + ')\n')
+            print('Done! You are now on: ' + self.target_branch + ' (on top of ' + self.basement_branch + ')\n')
             return True
         else:
-            self.print('Cleaning temporary branch: ' + tmp_branch)
+            print('Cleaning temporary branch: ' + tmp_branch)
             self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch)
             self.print('Done!')
-            return True
+            return False
 
-    def upToDate(self, target_branch, basement_branch, branches_to_cherry_pick):
-        current_basement = target_branch + '~' + (len(branches_to_cherry_pick)).__str__()
+    def upToDate(self):
+        current_basement = self.target_branch + '~' + (len(self.branches_to_cherry_pick)).__str__()
 
         current_hash = self.capture_output('git rev-parse ' + current_basement)
-        new_hash = self.capture_output('git rev-parse ' + basement_branch)
+        new_hash = self.capture_output('git rev-parse ' + self.basement_branch)
 
         return current_hash == new_hash
 
@@ -176,7 +176,8 @@ def parse_args(args):
     basement_branch = args[1]
     branches_to_cherry_pick = args[2:len(args)]
 
-    Picker().run(target_branch, basement_branch, branches_to_cherry_pick)
+    Picker(target_branch, basement_branch, branches_to_cherry_pick)\
+        .run()
 
 
 if __name__ == '__main__':
