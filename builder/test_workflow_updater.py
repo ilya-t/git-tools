@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
+import subprocess
 import unittest
+from queue import Queue
 
 import cherry_picker
 import test_env
@@ -87,13 +89,50 @@ class MultiBasementBranchTestCase(WorkFlowTestCase):
 
 class ConflictsTestCase(WorkFlowTestCase):
     def setUp(self):
+        self.input_queue = Queue()
         super().setUp()
         self.amend(branch = 'feature_1',amended_file = 'f1_file')
 
-    def test_already_on_tmp_branch(self):
+    def test_already_on_tmp_branch_has_no_effect(self):
         self.run_cmd('git checkout -b tmp/feature_1')
         workflow_updater.process_config(test_env.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm)
         self.assertFileAmended('f1_file')
+
+    def test_cherry_pick_conflicts_abort_should_stop_flow(self):
+        self.run_cmd(
+            'git checkout feature_1',
+            'echo conflict > f2_file',
+            'git add f2_file',
+            'git commit --amend --message "add f1 and f2 files"'
+        )
+
+        self.set_input('no')
+
+        workflow_updater.process_config(test_env.TEST_DIR + '/single_base_workspace.yml',
+                                        input_provider=lambda: self.pop_input())
+
+        self.assertEqual('', self.capture_cmd_output('git diff'))
+        self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
+
+    def pop_input(self):
+        self.assertFalse(self.input_queue.empty(), 'Queue is empty but input requested!')
+        input = self.input_queue.get()
+        print(input)
+        return input
+
+    def set_input(self, *params):
+        for param in params:
+            self.input_queue.put(param)
+
+    def capture_cmd_output(self, command):
+        with subprocess.Popen(command,
+                              shell=True,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              universal_newlines=True,
+                              cwd=test_env.REPO_DIR) as p:
+            stdout, stderr = p.communicate()
+            return stdout
 
 
 if __name__ == '__main__':

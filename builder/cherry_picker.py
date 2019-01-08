@@ -9,8 +9,6 @@ import sys
 import subprocess
 
 FALLBACK_BRANCH = 'master'
-DRY_RUN = False
-
 
 def always_confirm():
     return 'yes'
@@ -45,7 +43,8 @@ class Picker:
         cherry_picks = 0
 
         for line in branches_to_cherry_pick:
-            self.cherry_pick_by_branch(line, tmp_branch)
+            if not self.cherry_pick_by_branch(line, tmp_branch):
+                return False
             cherry_picks += 1
 
         print('=========================================')
@@ -83,15 +82,13 @@ class Picker:
         print('Cherry-picking current ' + branch)
         # printing commit message
         self.run_cmd('git show -s --format=%B $(git rev-parse ' + branch + ')')
-        self.run_cmd('git cherry-pick $(git rev-parse ' + branch + ')',
+
+        retcode = self.run_cmd('git cherry-pick $(git rev-parse ' + branch + ')',
                      fallback=lambda: self.try_continue_cherry_pick(tmp_branch),
                      print_output=self.verbose)
+        return retcode == 0
 
     def run_cmd(self, command, fallback=None, log_output=False, print_output=True):
-        if DRY_RUN:
-            self.print('cmd: ' + command)
-            return
-
         with subprocess.Popen(command,
                               shell=True,
                               stdout=subprocess.PIPE,
@@ -114,16 +111,21 @@ class Picker:
             if fallback is None:
                 raise Exception('shell command failed: ' + command + '\n with: ' + error.__str__())
             else:
-                fallback()
+                return fallback()
+        else:
+            return result
 
     def try_continue_cherry_pick(self, tmp_branch):
         abort_cherry_pick = 'git cherry-pick --abort && git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch
 
         if self.query_yes_no(
                 'Cherry pick failed! Resolve conflicts as usual and finish cherry pick by `git cherry-pick --continue`. Ready?') == 'yes':
-            return
+            return 0
         else:
+            print('Rolling back cherry-pick process!')
             self.run_cmd(abort_cherry_pick)
+            print('Done! You are now on: ' + FALLBACK_BRANCH)
+            return -1
 
     def run_simple_cmd(self, cmd):
         os.system('cd ' + self.cwd + ' && ' + cmd)
@@ -179,8 +181,5 @@ def parse_args(args):
 
 if __name__ == '__main__':
     sys_args = sys.argv[1:] if len(sys.argv) > 1 else None
-    if DRY_RUN and sys_args is None:
-        parse_args(['test_branch', 'origin/master', 'branch_to_cherry_pick~1', 'branch_to_cherry_pick'])
-    else:
-        parse_args(sys_args)
+    parse_args(sys_args)
 pass

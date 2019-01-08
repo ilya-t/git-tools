@@ -17,6 +17,7 @@ def start_flow(config, input_provider):
 
     for item in config:
         result = cherry_picker.Picker(cwd=CWD,
+                                      log_file=LOG_FILE,
                                       input_provider=input_provider,
                                       verbose_ouput=False) \
             .run(item[OUTPUT], item[BASEMENT], item[CHANGES])
@@ -24,9 +25,12 @@ def start_flow(config, input_provider):
         if (result):
             affected.append(item[OUTPUT])
 
-    print('All Done! How about to push changes?')
-    for branch in affected:
-        print('    git push origin '+branch+':'+branch+' --force')
+    if len(affected) > 0:
+        print('All Done! How about to push changes?')
+
+        for branch in affected:
+            print('    git push origin '+branch+':'+branch+' --force')
+
     print('')
 
 
