@@ -35,7 +35,7 @@ class Picker:
 
         tmp_branch = 'tmp/' + target_branch
         self.run_cmd('git checkout ' + basement_branch, print_output=False)
-        self.run_cmd('git branch -D ' + tmp_branch, print_output=False, fallback=lambda: None)
+        self.run_cmd('git branch -D ' + tmp_branch, print_output=False, log_output=True, fallback=lambda: None)
 
         print('Building at: ' + tmp_branch + ' (based on ' + basement_branch + ')')
         print('=========================================')
