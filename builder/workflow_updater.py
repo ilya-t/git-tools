@@ -4,23 +4,21 @@ import sys
 import cherry_picker
 import yaml
 
-DRY_RUN = False
 CWD = os.path.abspath('')
-SUPPRESS_PROMPTS_FOR_TESTS = False
 BASEMENT = 'basement_branch'
 CHANGES = 'branches_to_cherry_pick'
 OUTPUT = 'output_branch'
 LOG_FILE = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log'
 
 
-def start_flow(config):
+def start_flow(config, input_provider):
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
     for item in config:
         result = cherry_picker.Picker(cwd=CWD,
-                             suppress_prompts=SUPPRESS_PROMPTS_FOR_TESTS,
-                             verbose_ouput=False)\
+                                      input_provider=input_provider,
+                                      verbose_ouput=False) \
             .run(item[OUTPUT], item[BASEMENT], item[CHANGES])
 
         if (result):
@@ -74,20 +72,16 @@ def log(msg):
         print(msg, file=log_file)
 
 
-def parse_args(args):
-    with open(args[0], 'r') as config_file:
+def process_config(yaml_config, input_provider = lambda: input().lower()):
+    with open(yaml_config, 'r') as config_file:
         try:
             config = yaml.load(config_file)
-            start_flow(parse_yaml(config))
+            start_flow(parse_yaml(config), input_provider)
         except yaml.YAMLError as exc:
             raise Exception(exc)
 
 
 if __name__ == '__main__':
     sys_args = sys.argv[1:] if len(sys.argv) > 1 else None
-
-    if DRY_RUN:
-        parse_args(['tests/workspace.yml'])
-    else:
-        parse_args(sys_args)
+    process_config(sys_args[0])
 pass

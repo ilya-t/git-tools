@@ -12,29 +12,30 @@ FALLBACK_BRANCH = 'master'
 DRY_RUN = False
 
 
+def always_confirm():
+    return 'yes'
+
+
 class Picker:
     def __init__(self,
                  log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
-                 input_provider=lambda : input().lower(),
+                 input_provider=lambda: input().lower(),
                  cwd=os.path.abspath(''),
-                 suppress_prompts=False,
                  verbose_ouput=True):
         self.input_provider = input_provider
         self.log_file = log_file
         self.cwd = cwd
 
-        if suppress_prompts:
-            self.input_provider = lambda : 'yes'
         self.verbose = verbose_ouput
 
     def run(self, target_branch, basement_branch='origin/master', branches_to_cherry_pick=[]):
         if self.upToDate(target_branch, basement_branch, branches_to_cherry_pick):
-            print('Branch "'+target_branch+'" already up-to-date with basement "'+basement_branch+'"')
+            print('Branch "' + target_branch + '" already up-to-date with basement "' + basement_branch + '"')
             return False
 
         tmp_branch = 'tmp/' + target_branch
         self.run_cmd('git checkout ' + basement_branch, print_output=False)
-        self.run_cmd('git branch -d ' + tmp_branch, print_output=False, fallback=lambda: None)
+        self.run_cmd('git branch -D ' + tmp_branch, print_output=False, fallback=lambda: None)
 
         print('Building at: ' + tmp_branch + ' (based on ' + basement_branch + ')')
         print('=========================================')
@@ -68,7 +69,7 @@ class Picker:
             return True
 
     def upToDate(self, target_branch, basement_branch, branches_to_cherry_pick):
-        current_basement = target_branch + '~'+ (len(branches_to_cherry_pick)).__str__()
+        current_basement = target_branch + '~' + (len(branches_to_cherry_pick)).__str__()
 
         current_hash = self.capture_output('git rev-parse ' + current_basement)
         new_hash = self.capture_output('git rev-parse ' + basement_branch)
@@ -165,8 +166,7 @@ class Picker:
 
     def log(self, line):
         with open(self.log_file, mode='a') as log_file:
-            print(line, file = log_file)
-
+            print(line, file=log_file)
 
 
 def parse_args(args):

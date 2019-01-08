@@ -2,6 +2,7 @@
 import os
 import unittest
 
+import cherry_picker
 import test_env
 import workflow_updater
 
@@ -10,10 +11,9 @@ class WorkFlowTestCase(test_env.RepoTestCase):
     def setUp(self):
         super().setUp()
         workflow_updater.CWD = test_env.REPO_DIR
-        workflow_updater.SUPPRESS_PROMPTS_FOR_TESTS = True
-    
+
     def tearDown(self):
-        # super().tearDown() # comment to keep test env
+        super().tearDown() # comment to keep test env
         pass
 
     def amend(self, branch, amended_file):
@@ -37,7 +37,7 @@ class MultiAmendTestCase(WorkFlowTestCase):
         self.amend(branch = 'dev', amended_file = 'dev_file')
         self.amend(branch = 'feature_2', amended_file = 'f2_file')
         self.run_cmd('git checkout feature_2')
-        workflow_updater.parse_args([test_env.TEST_DIR+'/single_base_workspace.yml'])
+        workflow_updater.process_config(test_env.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm)
 
     def test_feature1_file_amended(self):
         self.assertFileAmended('f1_file')
@@ -62,7 +62,7 @@ class MultiBasementBranchTestCase(WorkFlowTestCase):
         self.hotfix_log = self.captureLog('hotfix')
         self.f2_log = self.captureLog('feature_2')
 
-        workflow_updater.parse_args([test_env.TEST_DIR+'/multi_base_workspace.yml'])
+        workflow_updater.process_config(test_env.TEST_DIR + '/multi_base_workspace.yml', cherry_picker.always_confirm)
 
     def test_feature1_file_amended(self):
         self.run_cmd('git checkout feature_1')
@@ -84,6 +84,16 @@ class MultiBasementBranchTestCase(WorkFlowTestCase):
         self.run_cmd('git checkout '+branch)
         return test_env.capture_cmd_output('git log -1')
 
+
+class ConflictsTestCase(WorkFlowTestCase):
+    def setUp(self):
+        super().setUp()
+        self.amend(branch = 'feature_1',amended_file = 'f1_file')
+
+    def test_already_on_tmp_branch(self):
+        self.run_cmd('git checkout -b tmp/feature_1')
+        workflow_updater.process_config(test_env.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm)
+        self.assertFileAmended('f1_file')
 
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ def repo_picker():
     return cherry_picker.Picker(log_file=TEST_LOG_FILE,
                                 cwd=REPO_DIR,
                                 verbose_ouput=True,
-                                suppress_prompts=True)
+                                input_provider=cherry_picker.always_confirm)
 
 
 def capture_cmd_output(command):
