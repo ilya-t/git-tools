@@ -22,13 +22,15 @@ class Picker:
                  log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
                  input_provider=lambda: input().lower(),
                  cwd=os.path.abspath(''),
-                 verbose_ouput=True):
+                 verbose_ouput=True,
+                 dry_run=False):
         self.target_branch = target_branch
         self.basement_branch = basement_branch
         self.branches_to_cherry_pick = branches_to_cherry_pick
         self.input_provider = input_provider
         self.log_file = log_file
         self.cwd = cwd
+        self.dry_run = dry_run
 
         self.verbose = verbose_ouput
 
@@ -51,9 +53,9 @@ class Picker:
         print('=========================================')
         print('Assembling complete. Take a look: ')
         # os.system to show pretty output about commits
-        self.run_simple_cmd('git log --oneline -' + str(cherry_picks + 1))
+        self.run_simple_cmd('git --no-pager log --oneline -' + str(cherry_picks + 1))
         print('=========================================')
-        if self.query_yes_no('Is branch assembled properly?') == 'yes':
+        if self.query_yes_no('Is branch assembled properly?') == 'yes' and not self.dry_run:
             self.run_cmd('git branch -D ' + self.target_branch, log_output=True, print_output=False)
             self.run_cmd('git checkout -b ' + self.target_branch)
             self.run_cmd('git branch -D ' + tmp_branch, print_output=False)

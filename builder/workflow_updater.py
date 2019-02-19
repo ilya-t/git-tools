@@ -3,6 +3,7 @@ import os
 import sys
 import cherry_picker
 import yaml
+import argparse
 
 CWD = os.path.abspath('')
 BASEMENT = 'basement_branch'
@@ -11,16 +12,16 @@ OUTPUT = 'output_branch'
 LOG_FILE = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log'
 
 
-def start_flow(config, input_provider):
+def start_flow(config, input_provider, force_update = False, dry_run = False):
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
     for item in config:
         picker = cherry_picker.Picker(target_branch=item[OUTPUT], basement_branch=item[BASEMENT],
                                       branches_to_cherry_pick=item[CHANGES], cwd=CWD, log_file=LOG_FILE,
-                                      input_provider=input_provider, verbose_ouput=False)
+                                      input_provider=input_provider, verbose_ouput=False, dry_run=dry_run)
 
-        if picker.upToDate():
+        if not force_update and picker.upToDate():
             print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
                   picker.basement_branch + '"')
             continue
@@ -82,16 +83,25 @@ def log(msg):
         print(msg, file=log_file)
 
 
-def process_config(yaml_config, input_provider=lambda: input().lower()):
+def process_config(yaml_config, input_provider=lambda: input().lower(), force_update = False, dry_run = False):
     with open(yaml_config, 'r') as config_file:
         try:
             config = yaml.load(config_file)
-            start_flow(parse_yaml(config), input_provider)
+            start_flow(parse_yaml(config), input_provider, force_update, dry_run)
         except yaml.YAMLError as exc:
             raise Exception(exc)
 
 
 if __name__ == '__main__':
-    sys_args = sys.argv[1:] if len(sys.argv) > 1 else None
-    process_config(sys_args[0])
+    parser = argparse.ArgumentParser(description='Starts branch building based on yaml config.')
+    parser.add_argument(dest='config_file', metavar='CONFIG', type=str, 
+                        help='path to config that describes how to build branch')
+    parser.add_argument('--force', action='store_true',
+                        help='ignores branch up-to-date state and forces rebuild')
+    parser.add_argument('--dry-run', action='store_true', 
+                        help='starts building process at temporary branches and does not perform any changes to real branches')
+ 
+    args = parser.parse_args()
+
+    process_config(args.config_file, force_update = args.force, dry_run = args.dry_run)
 pass
