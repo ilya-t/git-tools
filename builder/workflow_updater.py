@@ -4,6 +4,7 @@ import sys
 import cherry_picker
 import yaml
 import argparse
+import subprocess
 
 CWD = os.path.abspath('')
 BASEMENT = 'basement_branch'
@@ -84,12 +85,22 @@ def log(msg):
 
 
 def process_config(yaml_config, input_provider=lambda: input().lower(), force_update = False, dry_run = False):
+    current_branch = capture_current_branch()
+
     with open(yaml_config, 'r') as config_file:
         try:
             config = yaml.load(config_file)
             start_flow(parse_yaml(config), input_provider, force_update, dry_run)
         except yaml.YAMLError as exc:
             raise Exception(exc)
+
+    print('Returning back...')
+    os.system('git checkout '+current_branch)
+
+def capture_current_branch():
+    cmd = 'git rev-parse --abbrev-ref HEAD'
+    output = subprocess.check_output(cmd, cwd=CWD, universal_newlines=True, shell=True)
+    return output.splitlines()[0]
 
 
 if __name__ == '__main__':
