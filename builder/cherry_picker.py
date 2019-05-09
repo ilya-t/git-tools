@@ -70,7 +70,13 @@ class Picker:
             return False
 
     def upToDate(self):
-        current_basement = self.target_branch + '~' + (len(self.branches_to_cherry_pick)).__str__()
+        cherry_picks_count = len(self.branches_to_cherry_pick)
+        current_basement = self.target_branch + '~' + str(cherry_picks_count)
+
+        commit_count = int(self.capture_output('git rev-list --count ' + self.target_branch))
+
+        if commit_count < cherry_picks_count:
+            return False
 
         current_hash = self.capture_output('git rev-parse ' + current_basement)
         new_hash = self.capture_output('git rev-parse ' + self.basement_branch)
