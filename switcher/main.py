@@ -28,6 +28,7 @@ def main(args):
 
     checkout_branch = branch_filter.find_one()
     os.system('git checkout '+ checkout_branch)
+    print("With message: '" + branch_filter.head_commits[checkout_branch]+"'")
     pass
 
 

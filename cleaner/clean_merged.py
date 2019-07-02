@@ -126,7 +126,7 @@ if __name__ == '__main__':
     args = sys.argv[1:]
 
     if len(sys.argv) > 2:
-        Cleaner(cwd=args[1], upstream=args[2]).run()
+        Cleaner(cwd=args[0], upstream=args[1]).run()
     elif len(sys.argv) > 1:
         Cleaner(cwd=args[0]).run()
     else:
