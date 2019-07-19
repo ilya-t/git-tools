@@ -4,15 +4,15 @@
     - dev~0 # that consists of its head~0 commit
 
 - dev: # another basement branch, on top of which will be assembled feature branches
-  - feature_1: # branch to assemble on top of 'dev'
-    - feature_1~2 # that consists of 3 commits
-    - feature_1~1 # which applied one by one
-    - feature_1~0 # from oldest to newest
+  - feature_1: # branch to assemble on top of 'dev' that consists of 3 commits written on 'short form'
+    - ~2 # same as 'feature_1~2'
+    - ~1 # same as 'feature_1~1'
+    - ~0 # same as 'feature_1~0'
 
 - master: # another master used as basement branch, on top of which will be assembled hotfix
   - hotfix~0
 
 - master:
-    - non_existing_branch: # this branch not exists above dev, but it will be created automatically
+    - non_existing_branch: # this branch not exists above basement, but it will be created automatically
       - hotfix~0
     - empty_new_branch: # this branch not exists and can be empty for now

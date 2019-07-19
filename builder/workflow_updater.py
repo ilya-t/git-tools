@@ -73,6 +73,8 @@ def extract_rebuild_configs(config, basement):
             if not cherry_picks:
                 cherry_picks = []
 
+        cherry_picks = list(map(lambda commit_ref: as_long_form(commit_ref, branch_to_rebuild), cherry_picks))
+
         results.append({
             OUTPUT: branch_to_rebuild,
             BASEMENT: basement,
@@ -81,6 +83,13 @@ def extract_rebuild_configs(config, basement):
         basement = branch_to_rebuild
 
     return results
+
+
+def as_long_form(commit_ref, branch):
+    if commit_ref[0] == '~':
+        return branch+commit_ref
+    else:
+        return commit_ref
 
 
 def log(msg):
