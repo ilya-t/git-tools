@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import os
-import sys
-import cherry_picker
-import yaml
 import argparse
+import os
 import subprocess
+
+import yaml
+
+import cherry_picker
 
 CWD = os.path.abspath('')
 BASEMENT = 'basement_branch'
@@ -22,7 +23,7 @@ def start_flow(config, input_provider, force_update = False, dry_run = False):
                                       branches_to_cherry_pick=item[CHANGES], cwd=CWD, log_file=LOG_FILE,
                                       input_provider=input_provider, verbose_ouput=False, dry_run=dry_run)
 
-        if not force_update and picker.upToDate():
+        if not force_update and picker.up_to_date():
             print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
                   picker.basement_branch + '"')
             continue
@@ -69,6 +70,9 @@ def extract_rebuild_configs(config, basement):
             branch_to_rebuild = list(rebuild_config.keys())[0]
             cherry_picks = list(rebuild_config.values())[0]
 
+            if not cherry_picks:
+                cherry_picks = []
+
         results.append({
             OUTPUT: branch_to_rebuild,
             BASEMENT: basement,
@@ -96,6 +100,7 @@ def process_config(yaml_config, input_provider=lambda: input().lower(), force_up
 
     print('Returning back...')
     os.system('git checkout '+current_branch)
+
 
 def capture_current_branch():
     cmd = 'git rev-parse --abbrev-ref HEAD'

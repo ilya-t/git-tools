@@ -56,7 +56,7 @@ class Picker:
         self.run_simple_cmd('git --no-pager log --oneline -' + str(cherry_picks + 1))
         print('=========================================')
         if self.query_yes_no('Is branch assembled properly?') == 'yes' and not self.dry_run:
-            self.run_cmd('git branch -D ' + self.target_branch, log_output=True, print_output=False)
+            self.run_cmd('git branch -D ' + self.target_branch, log_output=True, print_output=False, fallback=lambda: None)
             self.run_cmd('git checkout -b ' + self.target_branch)
             self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
             self.log('Branch rebased: ' + self.target_branch + ' (on top of ' + self.basement_branch + ')')
@@ -69,11 +69,14 @@ class Picker:
             self.print('Done!')
             return False
 
-    def upToDate(self):
+    def up_to_date(self):
         cherry_picks_count = len(self.branches_to_cherry_pick)
         current_basement = self.target_branch + '~' + str(cherry_picks_count)
 
-        commit_count = int(self.capture_output('git rev-list --count ' + self.target_branch))
+        commit_count = int(self.capture_output('git rev-list --count ' + self.target_branch, fallback=lambda: '-1'))
+
+        if commit_count == -1: # branch not exists so it needs to be updated
+            return False
 
         if commit_count < cherry_picks_count:
             return False
@@ -83,8 +86,16 @@ class Picker:
 
         return current_hash == new_hash
 
-    def capture_output(self, cmd):
-        return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
+    def capture_output(self, cmd, fallback=None):
+        try:
+            return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
+        except subprocess.CalledProcessError as e:
+            print(e.output)
+            if not fallback:
+                raise e
+            else:
+                return fallback()
+    pass
 
     def cherry_pick_by_branch(self, branch, tmp_branch):
         print('Cherry-picking current ' + branch)

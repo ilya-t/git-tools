@@ -11,3 +11,8 @@
 
 - master: # another master used as basement branch, on top of which will be assembled hotfix
   - hotfix~0
+
+- master:
+    - non_existing_branch: # this branch not exists above dev, but it will be created automatically
+      - hotfix~0
+    - empty_new_branch: # this branch not exists and can be empty for now
