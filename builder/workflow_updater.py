@@ -15,7 +15,7 @@ OUTPUT = 'output_branch'
 LOG_FILE = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log'
 
 
-def start_flow(config, input_provider, force_update = False, dry_run = False):
+def start_flow(config, input_provider, force_update = False, dry_run = False, quiet = False):
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
@@ -24,7 +24,8 @@ def start_flow(config, input_provider, force_update = False, dry_run = False):
     for item in config:
         picker = cherry_picker.Picker(target_branch=item[OUTPUT], basement_branch=item[BASEMENT],
                                       branches_to_cherry_pick=item[CHANGES], cwd=CWD, log_file=LOG_FILE,
-                                      input_provider=input_provider, verbose_ouput=False, dry_run=dry_run)
+                                      input_provider=input_provider, verbose_ouput=False, dry_run=dry_run,
+                                      quiet=quiet)
 
         if not force_update and picker.up_to_date():
             print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
@@ -104,13 +105,17 @@ def log(msg):
         print(msg, file=log_file)
 
 
-def process_config(yaml_config, input_provider=lambda: input().lower(), force_update = False, dry_run = False):
+def process_config(yaml_config,
+                   input_provider=lambda: input().lower(),
+                   force_update = False,
+                   dry_run = False,
+                   quiet = False):
     current_branch = capture_current_branch()
 
     with open(yaml_config, 'r') as config_file:
         try:
             config = yaml.load(config_file)
-            start_flow(parse_yaml(config), input_provider, force_update, dry_run)
+            start_flow(parse_yaml(config), input_provider, force_update, dry_run, quiet)
         except yaml.YAMLError as exc:
             raise Exception(exc)
 
@@ -137,5 +142,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    process_config(args.config_file, force_update = args.force, dry_run = args.dry_run)
+    process_config(args.config_file, force_update = args.force, dry_run = args.dry_run, quiet=args.quiet)
 pass
