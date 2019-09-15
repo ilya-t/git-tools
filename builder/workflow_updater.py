@@ -15,41 +15,74 @@ OUTPUT = 'output_branch'
 LOG_FILE = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log'
 
 
-def start_flow(config, input_provider, force_update = False, dry_run = False, quiet = False):
-    log('\n==== Updating branches at: {} ===='.format(CWD))
-    affected = []
+class Builder:
+    def __init__(self,
+                 config_file,
+                 input_provider=lambda: input().lower(),
+                 force_update=False,
+                 dry_run=False,
+                 quiet=False):
+        super().__init__()
+        self._config_file = config_file
+        self._input_provider = input_provider
+        self._force_update = force_update
+        self._dry_run = dry_run
+        self._quiet = quiet
 
-    flow_start = datetime.datetime.now()
+    def build(self):
+        current_branch = capture_current_branch()
 
-    for item in config:
-        picker = cherry_picker.Picker(target_branch=item[OUTPUT], basement_branch=item[BASEMENT],
-                                      branches_to_cherry_pick=item[CHANGES], cwd=CWD, log_file=LOG_FILE,
-                                      input_provider=input_provider, verbose_ouput=False, dry_run=dry_run,
-                                      assume_assembled_properly=quiet)
+        with open(self._config_file, 'r') as config_file:
+            try:
+                config = yaml.load(config_file)
+                self._start_flow(parse_yaml(config))
+            except yaml.YAMLError as exc:
+                raise Exception(exc)
 
-        if not force_update and picker.up_to_date():
-            print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
-                  picker.basement_branch + '"')
-            continue
+        print('Returning back...')
+        os.system('git checkout ' + current_branch)
 
-        result = picker.run()
+    def _start_flow(self, config):
+        log('\n==== Updating branches at: {} ===='.format(CWD))
+        affected = []
 
-        if result:
-            affected.append(item[OUTPUT])
-        else:
-            print('Building cancelled!')
-            return
-    flow_end = datetime.datetime.now()
-    flow_seconds = (flow_end - flow_start).total_seconds()
-    seconds = str(round(flow_seconds, 1))
-    print('Overall build took: '+seconds+'s')
-    if len(affected) > 0:
-        print('All Done! How about to push changes?')
+        flow_start = datetime.datetime.now()
 
-        for branch in affected:
-            print('    git push origin ' + branch + ':' + branch + ' --force')
+        for item in config:
+            picker = cherry_picker.Picker(
+                target_branch=item[OUTPUT],
+                basement_branch=item[BASEMENT],
+                branches_to_cherry_pick=item[CHANGES],
+                cwd=CWD,
+                log_file=LOG_FILE,
+                input_provider=self._input_provider,
+                verbose_ouput=False,
+                dry_run=self._dry_run,
+                assume_assembled_properly=self._quiet)
 
-    print('')
+            if not self._force_update and picker.up_to_date():
+                print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
+                      picker.basement_branch + '"')
+                continue
+
+            result = picker.run()
+
+            if result:
+                affected.append(item[OUTPUT])
+            else:
+                print('Building cancelled!')
+                return
+        flow_end = datetime.datetime.now()
+        flow_seconds = (flow_end - flow_start).total_seconds()
+        seconds = str(round(flow_seconds, 1))
+        print('Overall build took: ' + seconds + 's')
+        if len(affected) > 0:
+            print('All Done! How about to push changes?')
+
+            for branch in affected:
+                print('    git push origin ' + branch + ':' + branch + ' --force')
+
+        print('')
 
 
 def parse_yaml(config):
@@ -105,24 +138,6 @@ def log(msg):
         print(msg, file=log_file)
 
 
-def process_config(yaml_config,
-                   input_provider=lambda: input().lower(),
-                   force_update = False,
-                   dry_run = False,
-                   quiet = False):
-    current_branch = capture_current_branch()
-
-    with open(yaml_config, 'r') as config_file:
-        try:
-            config = yaml.load(config_file)
-            start_flow(parse_yaml(config), input_provider, force_update, dry_run, quiet)
-        except yaml.YAMLError as exc:
-            raise Exception(exc)
-
-    print('Returning back...')
-    os.system('git checkout '+current_branch)
-
-
 def capture_current_branch():
     cmd = 'git rev-parse --abbrev-ref HEAD'
     output = subprocess.check_output(cmd, cwd=CWD, universal_newlines=True, shell=True)
@@ -142,5 +157,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    process_config(args.config_file, force_update = args.force, dry_run = args.dry_run, quiet=args.quiet)
+    Builder(
+        config_file=args.config_file,
+        force_update=args.force,
+        dry_run=args.dry_run,
+        quiet=args.quiet
+    ).build()
 pass
