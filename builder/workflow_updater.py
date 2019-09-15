@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import datetime
 import os
 import subprocess
 
@@ -18,6 +19,8 @@ def start_flow(config, input_provider, force_update = False, dry_run = False):
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
+    flow_start = datetime.datetime.now()
+
     for item in config:
         picker = cherry_picker.Picker(target_branch=item[OUTPUT], basement_branch=item[BASEMENT],
                                       branches_to_cherry_pick=item[CHANGES], cwd=CWD, log_file=LOG_FILE,
@@ -35,6 +38,10 @@ def start_flow(config, input_provider, force_update = False, dry_run = False):
         else:
             print('Building cancelled!')
             return
+    flow_end = datetime.datetime.now()
+    flow_seconds = (flow_end - flow_start).total_seconds()
+    seconds = str(round(flow_seconds, 1))
+    print('Overall build took: '+seconds+'s')
     if len(affected) > 0:
         print('All Done! How about to push changes?')
 
@@ -125,7 +132,9 @@ if __name__ == '__main__':
                         help='ignores branch up-to-date state and forces rebuild')
     parser.add_argument('--dry-run', action='store_true', 
                         help='starts building process at temporary branches and does not perform any changes to real branches')
- 
+    parser.add_argument('--quiet', action='store_true',
+                        help='will not ask questions during building process (except failed chery-picks)')
+
     args = parser.parse_args()
 
     process_config(args.config_file, force_update = args.force, dry_run = args.dry_run)

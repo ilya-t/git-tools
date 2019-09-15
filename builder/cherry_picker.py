@@ -23,7 +23,8 @@ class Picker:
                  input_provider=lambda: input().lower(),
                  cwd=os.path.abspath(''),
                  verbose_ouput=True,
-                 dry_run=False):
+                 dry_run=False,
+                 assume_assembled_properly=False):
         self.target_branch = target_branch
         self.basement_branch = basement_branch
         self.branches_to_cherry_pick = branches_to_cherry_pick
@@ -31,6 +32,7 @@ class Picker:
         self.log_file = log_file
         self.cwd = cwd
         self.dry_run = dry_run
+        self.assume_assembled_properly = assume_assembled_properly
 
         self.verbose = verbose_ouput
 
@@ -55,7 +57,7 @@ class Picker:
         # os.system to show pretty output about commits
         self.run_simple_cmd('git --no-pager log --oneline -' + str(cherry_picks + 1))
         print('=========================================')
-        if self.query_yes_no('Is branch assembled properly?') == 'yes' and not self.dry_run:
+        if self.can_commit_assemble():
             self.run_cmd('git branch -D ' + self.target_branch, log_output=True, print_output=False, fallback=lambda: None)
             self.run_cmd('git checkout -b ' + self.target_branch)
             self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
@@ -68,6 +70,14 @@ class Picker:
             self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch)
             self.print('Done!')
             return False
+
+    def can_commit_assemble(self):
+        if self.dry_run:
+            return False
+
+        if self.assume_assembled_properly:
+            return True
+        return self.query_yes_no('Is branch assembled properly?') == 'yes'
 
     def up_to_date(self):
         cherry_picks_count = len(self.branches_to_cherry_pick)
