@@ -40,7 +40,13 @@ class Cleaner:
                 self.git_branch_minus_D(merged)
 
     def is_merged(self, branch):
-        return self.capture_output('git log '+branch+' --not '+self.upstream) == ''
+        cmd = 'git log -n 1 --oneline '+branch+' --not '+self.upstream
+        try:
+            return self.capture_output(cmd) == ''
+        except Exception as exc:
+            print('Unexpected exception during command: ' + cmd)
+            raise Exception(exc)
+        
 
     def capture_output(self, cmd):
         return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
