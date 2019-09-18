@@ -10,13 +10,14 @@ import subprocess
 
 FALLBACK_BRANCH = 'master'
 
+
 def always_confirm():
     return 'yes'
 
 
 class Picker:
     def __init__(self,
-                 target_branch,
+                 target_branch=None,
                  basement_branch='origin/master',
                  branches_to_cherry_pick=[],
                  log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
@@ -33,21 +34,33 @@ class Picker:
         self.cwd = cwd
         self.dry_run = dry_run
         self.assume_assembled_properly = assume_assembled_properly
-
         self.verbose = verbose_ouput
 
     def run(self):
-        return self.cherry_pick()
+        if not self.target_branch:
+            raise Exception('Target branch unspecified!')
+        return self.prepare_candidate(
+            tmp_branch='tmp/'+self.target_branch,
+            steps=self._default_cherry_pick)
 
-    def cherry_pick(self):
-        tmp_branch = 'tmp/' + self.target_branch
+    def prepare_candidate(self, tmp_branch, steps):
         self.run_cmd('git checkout ' + self.basement_branch, print_output=False)
         self.run_cmd('git branch -D ' + tmp_branch, print_output=False, log_output=True, fallback=lambda: None)
         print('Building at: ' + tmp_branch + ' (based on ' + self.basement_branch + ')')
         print('=========================================')
-        self.print('Branches to cherry-pick: ' + self.branches_to_cherry_pick.__str__())
+        self.print('Branches to cherry-pick: ' + str(self.branches_to_cherry_pick))
         self.run_cmd('git checkout -b ' + tmp_branch + ' ' + self.basement_branch)
+
+        if steps(self, tmp_branch):
+            self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
+            return True
+        else:
+            self._mission_abort(tmp_branch)
+            return False
+
+    def _default_cherry_pick(self, _, tmp_branch):
         cherry_picks = 0
+
         for line in self.branches_to_cherry_pick:
             if not self.cherry_pick_by_branch(line, tmp_branch):
                 return False
@@ -60,16 +73,17 @@ class Picker:
         if self.can_commit_assemble():
             self.run_cmd('git branch -D ' + self.target_branch, log_output=True, print_output=False, fallback=lambda: None)
             self.run_cmd('git checkout -b ' + self.target_branch)
-            self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
-            self.log('Branch rebased: ' + self.target_branch + ' (on top of ' + self.basement_branch + ')')
+            self.log('Branch assembled: ' + self.target_branch + ' (on top of ' + self.basement_branch + ')')
             self.log('=========================================')
             print('Done! You are now on: ' + self.target_branch + ' (on top of ' + self.basement_branch + ')\n')
             return True
         else:
-            print('Cleaning temporary branch: ' + tmp_branch)
-            self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch)
-            self.print('Done!')
             return False
+
+    def _mission_abort(self, tmp_branch):
+        print('Cleaning temporary branch: ' + tmp_branch)
+        self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch)
+        self.print('Done!')
 
     def can_commit_assemble(self):
         if self.dry_run:
@@ -79,7 +93,13 @@ class Picker:
             return True
         return self.query_yes_no('Is branch assembled properly?') == 'yes'
 
+    # def up_to_date(self, target_branch, commits_to_basement, basement_branch):
+    #     pass
+
     def up_to_date(self):
+        if not self.target_branch:
+            raise Exception('Target branch unspecified!')
+
         cherry_picks_count = len(self.branches_to_cherry_pick)
         current_basement = self.target_branch + '~' + str(cherry_picks_count)
 
@@ -88,13 +108,13 @@ class Picker:
         if commit_count == -1: # branch not exists so it needs to be updated
             return False
 
-        if commit_count < cherry_picks_count:
+        if commit_count < cherry_picks_count: # branch has less commits than expected
             return False
 
         current_hash = self.capture_output('git rev-parse ' + current_basement)
         new_hash = self.capture_output('git rev-parse ' + self.basement_branch)
 
-        return current_hash == new_hash
+        return current_hash == new_hash # current branch head is not ahead
 
     def capture_output(self, cmd, fallback=None):
         try:
@@ -107,14 +127,14 @@ class Picker:
                 return fallback()
     pass
 
-    def cherry_pick_by_branch(self, branch, tmp_branch):
-        print('Cherry-picking current ' + branch)
+    def cherry_pick_by_branch(self, commit, tmp_branch):
+        print('Cherry-picking current ' + commit)
         # printing commit message
-        self.run_cmd('git show -s --format=%B $(git rev-parse ' + branch + ')')
+        self.run_cmd('git show -s --format=%B $(git rev-parse ' + commit + ')')
 
-        retcode = self.run_cmd('git cherry-pick $(git rev-parse ' + branch + ')',
-                     fallback=lambda: self.try_continue_cherry_pick(tmp_branch),
-                     print_output=self.verbose)
+        retcode = self.run_cmd('git cherry-pick $(git rev-parse ' + commit + ')',
+                               fallback=lambda: self.try_continue_cherry_pick(tmp_branch),
+                               print_output=self.verbose)
         return retcode == 0
 
     def run_cmd(self, command, fallback=None, log_output=False, print_output=True):
@@ -138,14 +158,15 @@ class Picker:
 
         if result != 0:
             if fallback is None:
-                raise Exception('shell command failed: ' + command + '\n with: ' + error.__str__())
+                raise Exception('shell command "' + command + '" failed:\n' +
+                                ''.join(error) if isinstance(error, list) else str(error))
             else:
                 return fallback()
         else:
             return result
 
     def try_continue_cherry_pick(self, tmp_branch):
-        abort_cherry_pick = 'git cherry-pick --abort && git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch
+        abort_cherry_pick = 'git cherry-pick --abort'
 
         if self.query_yes_no(
                 'Cherry pick failed! Resolve conflicts as usual and finish cherry pick by `git cherry-pick --continue`. Ready?') == 'yes':
