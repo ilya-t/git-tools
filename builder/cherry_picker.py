@@ -43,7 +43,7 @@ class Picker:
             tmp_branch='tmp/'+self.target_branch,
             steps=self._default_cherry_pick)
 
-    def prepare_candidate(self, tmp_branch, steps):
+    def prepare_candidate(self, tmp_branch, steps, keep_tmp_branch=False):
         self.run_cmd('git checkout ' + self.basement_branch, print_output=False)
         self.run_cmd('git branch -D ' + tmp_branch, print_output=False, log_output=True, fallback=lambda: None)
         print('Building at: ' + tmp_branch + ' (based on ' + self.basement_branch + ')')
@@ -52,7 +52,8 @@ class Picker:
         self.run_cmd('git checkout -b ' + tmp_branch + ' ' + self.basement_branch)
 
         if steps(self, tmp_branch):
-            self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
+            if not keep_tmp_branch:
+                self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
             return True
         else:
             self._mission_abort(tmp_branch)
@@ -130,6 +131,7 @@ class Picker:
     def cherry_pick_by_branch(self, commit, tmp_branch):
         print('Cherry-picking current ' + commit)
         # printing commit message
+        # TODO(add revision check)
         self.run_cmd('git show -s --format=%B $(git rev-parse ' + commit + ')')
 
         retcode = self.run_cmd('git cherry-pick $(git rev-parse ' + commit + ')',

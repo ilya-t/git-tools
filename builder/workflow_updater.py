@@ -86,7 +86,7 @@ class Builder:
 
         flow_start = datetime.datetime.now()
 
-        for single_basement_config in config:
+        for index, single_basement_config in enumerate(config):
             basement_branch = single_basement_config[BASEMENT]
             build_steps = single_basement_config[BUILD_STEPS]
 
@@ -99,9 +99,14 @@ class Builder:
                 dry_run=self._dry_run,
                 assume_assembled_properly=self._quiet)
 
+            # when next basement is equal so we can skip unnecessary delete+checkout
+            reuse_head = config[index+1][BASEMENT] == basement_branch if index + 1 < len(config) else False
             result = picker.prepare_candidate(
                 tmp_branch='tmp/'+basement_branch,
-                steps=lambda picker, tmp_branch: self._cherry_pick_and_create_branches(picker, tmp_branch, build_steps))
+                steps=lambda picker, tmp_branch: self._cherry_pick_and_create_branches(
+                    picker, tmp_branch, build_steps, reuse_head),
+                keep_tmp_branch=reuse_head
+            )
             # TODO: support up-to-date check
             # if not self._force_update and picker.up_to_date():
             #     print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +
@@ -126,12 +131,13 @@ class Builder:
 
         print('')
 
-    def _cherry_pick_and_create_branches(self, picker, tmp_branch, build_steps):
+    def _cherry_pick_and_create_branches(self, picker, tmp_branch, build_steps, reuse_head):
         last_branch=None
-
+        commits_ahead = 0
         for step in build_steps:
             if not picker.cherry_pick_by_branch(step[STEP_COMMIT], tmp_branch):
                 return False
+            commits_ahead += 1
 
             for target_branch in step[STEP_BRANCHES]:
                 last_branch=target_branch
@@ -143,7 +149,10 @@ class Builder:
                 else:
                     return False
 
-        picker.run_cmd('git checkout '+last_branch)
+        if reuse_head:
+            picker.run_cmd('git reset --hard HEAD~'+str(commits_ahead))
+        else:
+            picker.run_cmd('git checkout '+last_branch)
         return True
 
     def _start_flow(self, config):
