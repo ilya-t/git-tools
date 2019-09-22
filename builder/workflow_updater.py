@@ -3,6 +3,7 @@ import argparse
 import datetime
 import os
 import subprocess
+from operator import itemgetter
 
 import yaml
 
@@ -85,7 +86,9 @@ class Builder:
         affected = []
 
         flow_start = datetime.datetime.now()
-
+        cmd_timing = []
+        cmd_log = []
+        reusing_head = False
         for index, single_basement_config in enumerate(config):
             basement_branch = single_basement_config[BASEMENT]
             build_steps = single_basement_config[BUILD_STEPS]
@@ -99,13 +102,18 @@ class Builder:
                 dry_run=self._dry_run,
                 assume_assembled_properly=self._quiet)
 
+            tmp_branch = 'tmp/' + basement_branch
+
+            if not reusing_head:
+                picker.tmp_branch_acquire(tmp_branch)
+
             # when next basement is equal so we can skip unnecessary delete+checkout
-            reuse_head = config[index+1][BASEMENT] == basement_branch if index + 1 < len(config) else False
-            result = picker.prepare_candidate(
-                tmp_branch='tmp/'+basement_branch,
+            reusing_head = config[index+1][BASEMENT] == basement_branch if index + 1 < len(config) else False
+
+            result = picker.tmp_branch_build(
+                tmp_branch,
                 steps=lambda picker, tmp_branch: self._cherry_pick_and_create_branches(
-                    picker, tmp_branch, build_steps, reuse_head),
-                keep_tmp_branch=reuse_head
+                    picker, tmp_branch, build_steps, reusing_head),
             )
             # TODO: support up-to-date check
             # if not self._force_update and picker.up_to_date():
@@ -116,13 +124,29 @@ class Builder:
             if not result:
                 # not supported yet
                 # affected.append(single_basement_config[OUTPUT])
-            # else:
+                # else:
                 print('Building cancelled!')
                 return
+
+            if not reusing_head:
+                picker.tmp_branch_release(tmp_branch)
+
+            cmd_log.append(basement_branch + ' with ' + str(len(build_steps)) + ' steps:')
+            cmd_log.extend(picker.cmd_timing)
+            cmd_timing.extend(picker.cmd_timing)
         flow_end = datetime.datetime.now()
         flow_seconds = (flow_end - flow_start).total_seconds()
         seconds = str(round(flow_seconds, 1))
         print('Overall build took: ' + seconds + 's')
+        print('Command execution timing: ')
+        cmd_timing = sorted(cmd_timing, key=itemgetter(1), reverse=True)
+        for timing in cmd_timing:
+            print('  '+str(timing[1]) + 's: ' + timing[0])
+
+        print('COMMAND LOG:')
+        for l in cmd_log:
+            print(l)
+
         if len(affected) > 0:
             print('All Done! How about to push changes?')
 
@@ -132,7 +156,7 @@ class Builder:
         print('')
 
     def _cherry_pick_and_create_branches(self, picker, tmp_branch, build_steps, reuse_head):
-        last_branch=None
+        last_branch = None
         commits_ahead = 0
         for step in build_steps:
             if not picker.cherry_pick_by_branch(step[STEP_COMMIT], tmp_branch):
@@ -140,19 +164,19 @@ class Builder:
             commits_ahead += 1
 
             for target_branch in step[STEP_BRANCHES]:
-                last_branch=target_branch
+                last_branch = target_branch
                 if picker.can_commit_assemble():
                     picker.run_cmd('git branch -D ' + target_branch, log_output=True, print_output=False,
-                                 fallback=lambda: None)
-                    picker.run_cmd('git branch ' + target_branch + ' ' + tmp_branch+'~0')
+                                   fallback=lambda: None)
+                    picker.run_cmd('git branch ' + target_branch + ' ' + tmp_branch + '~0')
                     picker.log('Branch assembled: ' + target_branch + '!')
                 else:
                     return False
 
         if reuse_head:
-            picker.run_cmd('git reset --hard HEAD~'+str(commits_ahead))
+            picker.run_cmd('git reset --hard HEAD~' + str(commits_ahead))
         else:
-            picker.run_cmd('git checkout '+last_branch)
+            picker.run_cmd('git checkout ' + last_branch)
         return True
 
     def _start_flow(self, config):
@@ -243,7 +267,7 @@ def extract_rebuild_configs(branch_build_config, basement):
 
 def as_long_form(commit_ref, branch):
     if commit_ref[0] == '~':
-        return branch+commit_ref
+        return branch + commit_ref
     else:
         return commit_ref
 
@@ -261,11 +285,11 @@ def capture_current_branch():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Starts branch building based on yaml config.')
-    parser.add_argument(dest='config_file', metavar='CONFIG', type=str, 
+    parser.add_argument(dest='config_file', metavar='CONFIG', type=str,
                         help='path to config that describes how to build branch')
     parser.add_argument('--force', action='store_true',
                         help='ignores branch up-to-date state and forces rebuild')
-    parser.add_argument('--dry-run', action='store_true', 
+    parser.add_argument('--dry-run', action='store_true',
                         help='starts building process at temporary branches and does not perform any changes to real branches')
     parser.add_argument('--quiet', action='store_true',
                         help='will not ask questions during building process (except failed chery-picks)')

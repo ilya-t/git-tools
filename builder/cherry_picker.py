@@ -4,6 +4,7 @@
 # python3 git.rebase_onto.py output_branch_name basement_branch file_with_branches_to_cherry_pick
 # file_with_branches_to_cherry_pick is file which name is used to assemble branch.
 # its contents used to cherry-pick revisions one-by-one
+import datetime
 import os
 import sys
 import subprocess
@@ -35,29 +36,38 @@ class Picker:
         self.dry_run = dry_run
         self.assume_assembled_properly = assume_assembled_properly
         self.verbose = verbose_ouput
+        self.cmd_timing = []
 
     def run(self):
         if not self.target_branch:
             raise Exception('Target branch unspecified!')
-        return self.prepare_candidate(
-            tmp_branch='tmp/'+self.target_branch,
-            steps=self._default_cherry_pick)
+        tmp_branch = 'tmp/' + self.target_branch
 
-    def prepare_candidate(self, tmp_branch, steps, keep_tmp_branch=False):
+        self.tmp_branch_acquire(tmp_branch)
+
+        if self.tmp_branch_build(tmp_branch, self._default_cherry_pick):
+            self.tmp_branch_release(tmp_branch)
+            return True
+        else:
+            return False
+
+    def tmp_branch_build(self, tmp_branch, steps):
+        if steps(self, tmp_branch):
+            return True
+        else:
+            self._mission_abort(tmp_branch)
+            return False
+
+    def tmp_branch_release(self, tmp_branch):
+        self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
+
+    def tmp_branch_acquire(self, tmp_branch):
         self.run_cmd('git checkout ' + self.basement_branch, print_output=False)
         self.run_cmd('git branch -D ' + tmp_branch, print_output=False, log_output=True, fallback=lambda: None)
         print('Building at: ' + tmp_branch + ' (based on ' + self.basement_branch + ')')
         print('=========================================')
         self.print('Branches to cherry-pick: ' + str(self.branches_to_cherry_pick))
         self.run_cmd('git checkout -b ' + tmp_branch + ' ' + self.basement_branch)
-
-        if steps(self, tmp_branch):
-            if not keep_tmp_branch:
-                self.run_cmd('git branch -D ' + tmp_branch, print_output=False)
-            return True
-        else:
-            self._mission_abort(tmp_branch)
-            return False
 
     def _default_cherry_pick(self, _, tmp_branch):
         cherry_picks = 0
@@ -146,7 +156,9 @@ class Picker:
                               stderr=subprocess.PIPE,
                               universal_newlines=True,
                               cwd=self.cwd) as p:
+            flow_start = datetime.datetime.now()
             result = p.wait()
+            self._record_execution_time(flow_start, command)
             output = p.stdout.readlines()
             error = p.stderr.readlines()
 
@@ -180,7 +192,9 @@ class Picker:
             return -1
 
     def run_simple_cmd(self, cmd):
+        flow_start = datetime.datetime.now()
         os.system('cd ' + self.cwd + ' && ' + cmd)
+        self._record_execution_time(flow_start, cmd)
 
     def query_yes_no(self, question, default='yes'):
         '''Ask a yes/no question via raw_input() and return their answer.
@@ -221,6 +235,11 @@ class Picker:
     def log(self, line):
         with open(self.log_file, mode='a') as log_file:
             print(line, file=log_file)
+
+    def _record_execution_time(self, time_start, cmd):
+        flow_seconds = (datetime.datetime.now() - time_start).total_seconds()
+        seconds = round(flow_seconds, 1)
+        self.cmd_timing.append([cmd, seconds])
 
 
 def parse_args(args):
