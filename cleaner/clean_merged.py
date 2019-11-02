@@ -23,12 +23,15 @@ class Cleaner:
     def run(self):
         self.current_branch = self.capture_output('git rev-parse --abbrev-ref HEAD').splitlines()[0]
         self.all_branches = self.capture_output('git branch').replace('* ', '').replace(' ', '').splitlines()
-        self.merged_branches = list(filter(self.is_merged, self.all_branches))
+        if self._upstream_exists():
+            self.merged_branches = list(filter(self.is_merged, self.all_branches))
 
-        if len(self.merged_branches) == 0:
-            print('There are no local branches that were merged to upstream('+self.upstream+')!')
+            if len(self.merged_branches) == 0:
+                print('There are no local branches that were merged to upstream('+self.upstream+')!')
+            else:
+                print('Found '+str(len(self.merged_branches))+' branches that were merged to upstream('+self.upstream+')!')
         else:
-            print('Found '+str(len(self.merged_branches))+' branches that were merged to upstream('+self.upstream+')!')
+            self.merged_branches = []
 
         bfilter = branch_filter.BranchFilter(cwd=self.cwd, input_provider=self.input_provider)
         bfilter.extend_selected(self.merged_branches)
@@ -38,6 +41,18 @@ class Cleaner:
         for merged in self.merged_branches:
             if merged != self.current_branch:
                 self.git_branch_minus_D(merged)
+
+    def _upstream_exists(self):
+        got_exception = self.run_cmd(
+            'git rev-parse --abbrev-ref '+self.upstream,
+            fallback=lambda: None
+        ) != 0
+
+        if got_exception:
+            print('Failed to access upsteam branch "'+self.upstream+
+            '" with merged-changes! Please specify upstream as second argument!')
+
+        return not got_exception
 
     def is_merged(self, branch):
         cmd = 'git log -n 1 --oneline '+branch+' --not '+self.upstream
@@ -81,6 +96,7 @@ class Cleaner:
                 raise Exception('shell command failed: ' + command + '\n with: ' + error.__str__())
             else:
                 fallback()
+        return result
 
 
 def find_dot_git(path):
