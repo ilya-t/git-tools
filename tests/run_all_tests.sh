@@ -3,7 +3,7 @@ set -e
 cd builder
 ./run_tests.sh
 cd ../cleaner
-python3 -m unittest test_clean_merged.py
+pytest --html=test_report.html --self-contained-html test_clean_merged.py
 cd ../switcher
-python3 -m unittest test_branchFilter.py
+pytest --html=test_report.html --self-contained-html test_branchFilter.py
 cd ..
