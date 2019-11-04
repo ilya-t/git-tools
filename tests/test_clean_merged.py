@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 import os
-import shutil
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__))+'/cleaner')
 import subprocess
 import unittest
 
 import clean_merged
 import test_env
 
-TEST_DIR = os.path.abspath(os.path.dirname(__file__)+'/../tests')
-
-REPO_DIR = TEST_DIR + '/repo'
-TEST_LOG_FILE = REPO_DIR + '/delete_test.log'
+TEST_LOG_FILE = test_env.REPO_DIR + '/delete_test.log'
 
 
-class CleanMergedTestCase(test_env.TestEnvTestCase):
+class CleanMergedTestCase(test_env.RepoTestCase):
     def setUp(self):
         super().setUp()
         self.run_cmd(
@@ -63,7 +61,7 @@ class CleanMergedTestCase(test_env.TestEnvTestCase):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               universal_newlines=True,
-                              cwd=REPO_DIR) as p:
+                              cwd=test_env.REPO_DIR) as p:
             stdout, stderr = p.communicate()
             return stdout
 
@@ -74,7 +72,7 @@ class CleanMergedTestCase(test_env.TestEnvTestCase):
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
                                   universal_newlines=True,
-                                  cwd=REPO_DIR) as p:
+                                  cwd=test_env.REPO_DIR) as p:
                 retcode = p.wait()
                 if retcode != 0:
                     for line in p.stdout.readlines():

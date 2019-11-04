@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 from queue import Queue
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__))+'/switcher')
 
 import test_env
 from branch_filter import BranchFilter
 
 
-class TestBranchFilter(test_env.TestEnvTestCase):
+class TestBranchFilter(test_env.RepoTestCase):
     def setUp(self):
         super().setUp()
         self.input_queue = Queue()

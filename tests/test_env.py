@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__))+'/builder')
+
 import shutil
 import subprocess
 import unittest
@@ -37,6 +40,7 @@ class RepoTestCase(unittest.TestCase):
         self.cleanup()
         self.init_repo()
         self.assertTrue(os.path.exists(REPO_DIR + '/README.md'))
+        self.test_repo_dir=REPO_DIR
 
     def tearDown(self):
         self.cleanup()
