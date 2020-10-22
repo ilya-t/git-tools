@@ -35,6 +35,9 @@ class Builder:
         self._quiet = quiet
         self._experimental_build = experimental
 
+        if self._experimental_build:
+            print('WARNING! EXPERIMENTAL BUILD IS ON!')
+
     def build(self):
         current_branch = capture_current_branch()
 

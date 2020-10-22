@@ -14,6 +14,9 @@ class WorkFlowTestCase(test_env.RepoTestCase):
         super().setUp()
         workflow_updater.CWD = test_env.REPO_DIR
 
+    def isExperimental(self):
+        return False
+
     def tearDown(self):
         super().tearDown()  # comment to keep test env
         pass
@@ -39,7 +42,11 @@ class MultiAmendTestCase(WorkFlowTestCase):
         self.amend(branch='dev', amended_file='dev_file')
         self.amend(branch='feature_2', amended_file='f2_file')
         self.run_cmd('git checkout feature_2')
-        workflow_updater.Builder(test_env.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm).build()
+        workflow_updater.Builder(
+            config_file=test_env.TEST_DIR + '/single_base_workspace.yml', 
+            input_provider=cherry_picker.always_confirm,
+            experimental=self.isExperimental()
+        ).build()
 
     def test_feature1_file_amended(self):
         self.assertFileAmended('f1_file')
@@ -64,7 +71,11 @@ class MultiBasementBranchTestCase(WorkFlowTestCase):
         self.hotfix_log = self.captureLog('hotfix')
         self.f2_log = self.captureLog('feature_2')
 
-        workflow_updater.Builder(test_env.TEST_DIR + '/multi_base_workspace.yml', cherry_picker.always_confirm).build()
+        workflow_updater.Builder(
+            config_file=test_env.TEST_DIR + '/multi_base_workspace.yml', 
+            input_provider=cherry_picker.always_confirm,
+            experimental=self.isExperimental()
+        ).build()
 
     def test_feature1_file_amended(self):
         self.run_cmd('git checkout feature_1')
@@ -108,7 +119,11 @@ class ConflictsTestCase(WorkFlowTestCase):
 
     def test_already_on_tmp_branch_has_no_effect(self):
         self.run_cmd('git checkout -b tmp/feature_1')
-        workflow_updater.Builder(test_env.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm).build()
+        workflow_updater.Builder(
+            config_file=test_env.TEST_DIR + '/single_base_workspace.yml', 
+            input_provider=cherry_picker.always_confirm,
+            experimental=self.isExperimental()
+        ).build()
         self.assertFileAmended('f1_file')
 
     def test_cherry_pick_conflicts_abort_should_stop_flow(self):
@@ -121,8 +136,11 @@ class ConflictsTestCase(WorkFlowTestCase):
 
         self.set_input('no')
 
-        workflow_updater.Builder(test_env.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input()).build()
+        workflow_updater.Builder(
+            config_file=test_env.TEST_DIR + '/single_base_workspace.yml',
+            input_provider=lambda: self.pop_input(),
+            experimental=self.isExperimental()
+        ).build()
 
         self.assertEqual('', self.capture_cmd_output('git diff'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
@@ -131,8 +149,11 @@ class ConflictsTestCase(WorkFlowTestCase):
         self.amend(branch='dev', amended_file='dev_file')
         self.set_input('no')
 
-        workflow_updater.Builder(test_env.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input()).build()
+        workflow_updater.Builder(
+            config_file=test_env.TEST_DIR + '/single_base_workspace.yml',
+            input_provider=lambda: self.pop_input(),
+            experimental=self.isExperimental()
+        ).build()
 
         self.assertEqual('', self.capture_cmd_output('git diff'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
@@ -156,6 +177,19 @@ class ConflictsTestCase(WorkFlowTestCase):
                               cwd=test_env.REPO_DIR) as p:
             stdout, stderr = p.communicate()
             return stdout
+
+class EXPERIMENTAL_MultiAmendTestCase(MultiAmendTestCase):
+    def isExperimental(self):
+        return True
+        
+class EXPERIMENTAL_MultiBasementBranchTestCase(MultiBasementBranchTestCase):
+    def isExperimental(self):
+        return True
+        
+class EXPERIMENTAL_ConflictsTestCase(ConflictsTestCase):
+    def isExperimental(self):
+        return True
+        
 
 if __name__ == '__main__':
     unittest.main()
