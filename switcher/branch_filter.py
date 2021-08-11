@@ -10,23 +10,32 @@ SOURCE_REMOTE = 'all remote branches'  # no supported yet
 
 class BranchFilter:
     def __init__(self,
-                 input_provider=lambda : input().lower(),
+                 custom_branches: list[str] = None,
+                 input_provider=lambda: input().lower(),
                  cwd=os.path.abspath('')):
         self.cwd = cwd
         self.provide_input = input_provider
         branches_str = self.capture_output('git branch')
-        # TODO sorted(key=lambda key: sort_case)
-        self.all_branches = branches_str.replace('* ', '').replace(' ', '').splitlines()
-        self.all_branches = sorted(self.all_branches, reverse=True)
+
+        if custom_branches:
+            self.all_branches = custom_branches
+        else:
+            # TODO sorted(key=lambda key: sort_case)
+            self.all_branches: list[str] = branches_str.replace('* ', '').replace(' ', '').splitlines()
+            self.all_branches = sorted(self.all_branches, reverse=True)
 
         self.remaining_branches = list(self.all_branches)
-
         self.head_commits = {} #map here!
 
         for branch in self.all_branches:
-            full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + branch + '~0)')
-            fisrt_return = full_commit_log.index('\n')
-            self.head_commits[branch] = full_commit_log[0:fisrt_return]
+            try:
+                full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + branch + '~0)')
+                fisrt_return = full_commit_log.index('\n')
+                full_commit_log = full_commit_log[0:fisrt_return]
+            except:
+                full_commit_log = '<BRANCH NOT FOUND>'
+                pass
+            self.head_commits[branch] = full_commit_log
 
         self.selected_branches = []
         self.selection_finished = False
