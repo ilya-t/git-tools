@@ -45,7 +45,7 @@ eval "git cherry-pick "$COMMITS_LIST
 if [ "$?" != "0" ] ; then
     git cherry-pick --abort
     eval "git checkout $ORIGIN_BRANCH"
-    eval "git br -D "$CODE_REVIEW_BRANCH
+    eval "git branch -D "$CODE_REVIEW_BRANCH
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo "Failed to cherry-pick! You've returned where you were!"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -79,7 +79,7 @@ read -p "Is review finished? (y/n(q)) " CONFIRM_FINISH
 
 if [ "$CONFIRM_FINISH" != "q" ] && [ "$CONFIRM_FINISH" != "n" ] && [ "$CONFIRM_FINISH" != "N" ] ; then
     eval "git checkout $ORIGIN_BRANCH"
-    eval "git br -D "$CODE_REVIEW_BRANCH
+    eval "git branch -D "$CODE_REVIEW_BRANCH
 
     echo "Done! You've returned where you were!"
     exit 0;

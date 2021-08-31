@@ -69,7 +69,7 @@ class Picker:
             return True
         else:
             print('Cleaning temporary branch: ' + tmp_branch)
-            self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch)
+            self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git branch -D ' + tmp_branch)
             self.print('Done!')
             return False
 
@@ -147,7 +147,7 @@ class Picker:
             return result
 
     def try_continue_cherry_pick(self, tmp_branch: str):
-        abort_cherry_pick = 'git cherry-pick --abort && git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch
+        abort_cherry_pick = 'git cherry-pick --abort && git checkout ' + FALLBACK_BRANCH + ' && git branch -D ' + tmp_branch
 
         if self.query_yes_no(
                 'Cherry pick failed! Resolve conflicts as usual and finish cherry pick by `git cherry-pick --continue`. Ready?') == 'yes':
