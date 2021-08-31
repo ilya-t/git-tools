@@ -10,7 +10,7 @@ SOURCE_REMOTE = 'all remote branches'  # no supported yet
 
 class BranchFilter:
     def __init__(self,
-                 custom_branches: list[str] = None,
+                 custom_branches: [str] = None,
                  input_provider=lambda: input().lower(),
                  cwd=os.path.abspath('')):
         self.cwd = cwd
