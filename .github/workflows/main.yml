@@ -30,4 +30,4 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: tests artifacts
-        path: $GITHUB_WORKSPACE/tests/reports
+        path: tests/reports
