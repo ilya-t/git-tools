@@ -10,7 +10,8 @@ import subprocess
 from typing import Callable
 
 FALLBACK_BRANCH = 'master'
-
+CONTENT_COMMIT = 'commit_link'
+CONTENT_MESSAGE = 'commit_message'
 
 def always_confirm():
     return 'yes'
@@ -19,8 +20,8 @@ def always_confirm():
 class Picker:
     def __init__(self,
                  target_branch: str,
+                 branch_contents: [object],
                  basement_branch: str = 'origin/master',
-                 branches_to_cherry_pick: [str] = [],
                  log_file: str = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
                  input_provider: Callable[[], str] = lambda: input().lower(),
                  cwd: str = os.path.abspath(''),
@@ -29,7 +30,9 @@ class Picker:
                  assume_assembled_properly: bool = False):
         self.target_branch = target_branch
         self.basement_branch = basement_branch
-        self.branches_to_cherry_pick = branches_to_cherry_pick
+
+        self.branches_to_cherry_pick = list(map(lambda e: e[CONTENT_COMMIT], branch_contents))
+        self.commit_messages = list(map(lambda e: e.get(CONTENT_MESSAGE, None), branch_contents))
         self.input_provider = input_provider
         self.log_file = log_file
         self.cwd = cwd
@@ -50,10 +53,17 @@ class Picker:
         self.print('Branches to cherry-pick: ' + self.branches_to_cherry_pick.__str__())
         self.run_cmd('git checkout -b ' + tmp_branch + ' ' + self.basement_branch)
         cherry_picks = 0
-        for line in self.branches_to_cherry_pick:
+
+        for i, line in enumerate(self.branches_to_cherry_pick):
             if not self.cherry_pick_by_branch(line, tmp_branch):
                 return False
+
             cherry_picks += 1
+
+            custom_message = self.commit_messages[i]
+            if custom_message and not self.amend(custom_message):
+                return False
+
         print('=========================================')
         print('Assembling complete. Take a look: ')
         # os.system to show pretty output about commits
@@ -117,6 +127,11 @@ class Picker:
         retcode = self.run_cmd('git cherry-pick $(git rev-parse ' + branch + ')',
                      fallback=lambda: self.try_continue_cherry_pick(tmp_branch),
                      print_output=self.verbose)
+        return retcode == 0
+
+    def amend(self, message: str):
+        print('Adding own message')
+        retcode = self.run_cmd('git commit --amend --message="'+message+'"')
         return retcode == 0
 
     def run_cmd(self, command: str, fallback: Callable[[], None] = None, log_output: bool = False, print_output: bool = True):

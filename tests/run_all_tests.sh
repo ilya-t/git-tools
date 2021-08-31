@@ -15,25 +15,28 @@ SWITCHER_RET_CODE=$?
 cd ..
 
 echo "See test reports: "
-echo "  ./reports/builder_report.html"
-echo "  ./reports/cleaner_report.html"
-echo "  ./reports/switcher_report.html"
 
 RETCODE=0
 
 if [ "$BUILDER_RET_CODE" != "0" ]; then
-    echo "Builder tests failed"
+    echo "  ./reports/builder_report.html (FAILED)"
     RETCODE=1
+else
+    echo "  ./reports/builder_report.html"
 fi
 
 if [ "$CLEANER_RET_CODE" != "0" ]; then
-    echo "Cleaner tests failed"
+    echo "  ./reports/cleaner_report.html (FAILED)"
     RETCODE=1
+else
+    echo "  ./reports/cleaner_report.html"
 fi
 
 if [ "$SWITCHER_RET_CODE" != "0" ]; then
-    echo "Switcher tests failed"
+    echo "  ./reports/switcher_report.html (FAILED)"
     RETCODE=1
+else
+    echo "  ./reports/switcher_report.html"
 fi
 
 exit $RETCODE
