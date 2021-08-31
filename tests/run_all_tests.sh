@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 set -e
-chmod +x ../reviewer/run.sh
-chmod +x ../tests/*.sh
 
 mkdir -p ./reports/
 cd ../builder
