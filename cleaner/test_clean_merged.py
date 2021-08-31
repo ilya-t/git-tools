@@ -5,7 +5,7 @@ import subprocess
 import unittest
 
 import clean_merged
-import test_env
+import testenv
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__)+'/../tests')
 
@@ -13,7 +13,7 @@ REPO_DIR = TEST_DIR + '/repo'
 TEST_LOG_FILE = REPO_DIR + '/delete_test.log'
 
 
-class CleanMergedTestCase(test_env.TestEnvTestCase):
+class CleanMergedTestCase(testenv.TestEnvTestCase):
     def setUp(self):
         super().setUp()
         self.run_cmd(

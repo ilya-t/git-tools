@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 from queue import Queue
 
-import test_env
+import testenv
 from branch_filter import BranchFilter
 
 
-class TestBranchFilter(test_env.TestEnvTestCase):
+class TestBranchFilter(testenv.TestEnvTestCase):
     def setUp(self):
         super().setUp()
         self.input_queue = Queue()

@@ -1,9 +1,18 @@
 #!/usr/bin/env sh
 set -e
-cd builder
-./run_tests.sh
+chmod +x ../reviewer/run.sh
+chmod +x ../tests/*.sh
+
+mkdir -p ./reports/
+cd ../builder
+../toolsenv/bin/pytest --html=../tests/reports/builder_report.html --self-contained-html ./test_*.py
 cd ../cleaner
-python3 -m unittest test_clean_merged.py
+../toolsenv/bin/pytest --html=../tests/reports/cleaner_report.html --self-contained-html ./test_*.py
 cd ../switcher
-python3 -m unittest test_branchFilter.py
+../toolsenv/bin/pytest --html=../tests/reports/switcher_report.html --self-contained-html ./test_*.py
 cd ..
+
+echo "See test reports: "
+echo "  ./reports/builder_report.html"
+echo "  ./reports/cleaner_report.html"
+echo "  ./reports/switcher_report.html"
