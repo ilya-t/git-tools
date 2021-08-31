@@ -7,8 +7,10 @@
 import os
 import sys
 import subprocess
+from typing import Callable
 
 FALLBACK_BRANCH = 'master'
+
 
 def always_confirm():
     return 'yes'
@@ -16,15 +18,15 @@ def always_confirm():
 
 class Picker:
     def __init__(self,
-                 target_branch,
-                 basement_branch='origin/master',
-                 branches_to_cherry_pick=[],
-                 log_file=os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
-                 input_provider=lambda: input().lower(),
-                 cwd=os.path.abspath(''),
-                 verbose_ouput=True,
-                 dry_run=False,
-                 assume_assembled_properly=False):
+                 target_branch: str,
+                 basement_branch: str = 'origin/master',
+                 branches_to_cherry_pick: [str] = [],
+                 log_file: str = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log',
+                 input_provider: Callable[[], str] = lambda: input().lower(),
+                 cwd: str = os.path.abspath(''),
+                 verbose_ouput: bool = True,
+                 dry_run: bool = False,
+                 assume_assembled_properly: bool = False):
         self.target_branch = target_branch
         self.basement_branch = basement_branch
         self.branches_to_cherry_pick = branches_to_cherry_pick
@@ -96,7 +98,7 @@ class Picker:
 
         return current_hash == new_hash
 
-    def capture_output(self, cmd, fallback=None):
+    def capture_output(self, cmd: str, fallback=None):
         try:
             return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
         except subprocess.CalledProcessError as e:
@@ -107,7 +109,7 @@ class Picker:
                 return fallback()
     pass
 
-    def cherry_pick_by_branch(self, branch, tmp_branch):
+    def cherry_pick_by_branch(self, branch: str, tmp_branch: str):
         print('Cherry-picking current ' + branch)
         # printing commit message
         self.run_cmd('git show -s --format=%B $(git rev-parse ' + branch + ')')
@@ -117,7 +119,7 @@ class Picker:
                      print_output=self.verbose)
         return retcode == 0
 
-    def run_cmd(self, command, fallback=None, log_output=False, print_output=True):
+    def run_cmd(self, command: str, fallback: Callable[[], None] = None, log_output: bool = False, print_output: bool = True):
         with subprocess.Popen(command,
                               shell=True,
                               stdout=subprocess.PIPE,
@@ -144,7 +146,7 @@ class Picker:
         else:
             return result
 
-    def try_continue_cherry_pick(self, tmp_branch):
+    def try_continue_cherry_pick(self, tmp_branch: str):
         abort_cherry_pick = 'git cherry-pick --abort && git checkout ' + FALLBACK_BRANCH + ' && git br -D ' + tmp_branch
 
         if self.query_yes_no(
@@ -156,10 +158,10 @@ class Picker:
             print('Done! You are now on: ' + FALLBACK_BRANCH)
             return -1
 
-    def run_simple_cmd(self, cmd):
+    def run_simple_cmd(self, cmd: str):
         os.system('cd ' + self.cwd + ' && ' + cmd)
 
-    def query_yes_no(self, question, default='yes'):
+    def query_yes_no(self, question: str, default: str='yes'):
         '''Ask a yes/no question via raw_input() and return their answer.
 
         'question' is a string that is presented to the user.
@@ -200,7 +202,7 @@ class Picker:
             print(line, file=log_file)
 
 
-def parse_args(args):
+def parse_args(args: [str]):
     target_branch = args[0]
     basement_branch = args[1]
     branches_to_cherry_pick = args[2:len(args)]

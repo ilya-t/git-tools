@@ -3,10 +3,9 @@ import argparse
 import datetime
 import os
 import subprocess
-
 import yaml
-
 import cherry_picker
+from typing import Callable
 
 CWD = os.path.abspath('')
 BASEMENT = 'basement_branch'
@@ -15,7 +14,7 @@ OUTPUT = 'output_branch'
 LOG_FILE = os.path.abspath(os.path.dirname(__file__)) + '/assembly.log'
 
 
-def start_flow(config, input_provider, force_update = False, dry_run = False, quiet = False):
+def start_flow(config: [object], input_provider: Callable[[], str], force_update: bool = False, dry_run: bool = False, quiet: bool = False):
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
@@ -52,9 +51,8 @@ def start_flow(config, input_provider, force_update = False, dry_run = False, qu
     print('')
 
 
-def parse_yaml(config):
+def parse_yaml(config) -> [[object]]:
     parsed_config = []
-
     for basement in config:
         basement_branch = list(basement.keys())[0]
         basement_config = list(basement.values())[0]
@@ -63,7 +61,6 @@ def parse_yaml(config):
             config=basement_config,
             basement=basement_branch)
         )
-
     return parsed_config
 
 
@@ -105,11 +102,11 @@ def log(msg):
         print(msg, file=log_file)
 
 
-def process_config(yaml_config,
-                   input_provider=lambda: input().lower(),
-                   force_update = False,
-                   dry_run = False,
-                   quiet = False):
+def process_config(yaml_config: str,
+                   input_provider: Callable[[], str] = lambda: input().lower(),
+                   force_update: bool = False,
+                   dry_run: bool = False,
+                   quiet: bool = False):
     current_branch = capture_current_branch()
 
     with open(yaml_config, 'r') as config_file:
@@ -123,19 +120,19 @@ def process_config(yaml_config,
     os.system('git checkout '+current_branch)
 
 
-def capture_current_branch():
+def capture_current_branch() -> str:
     cmd = 'git rev-parse --abbrev-ref HEAD'
     output = subprocess.check_output(cmd, cwd=CWD, universal_newlines=True, shell=True)
-    return output.splitlines()[0]
+    return str(output.splitlines()[0])
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Starts branch building based on yaml config.')
-    parser.add_argument(dest='config_file', metavar='CONFIG', type=str, 
+    parser.add_argument(dest='config_file', metavar='CONFIG', type=str,
                         help='path to config that describes how to build branch')
     parser.add_argument('--force', action='store_true',
                         help='ignores branch up-to-date state and forces rebuild')
-    parser.add_argument('--dry-run', action='store_true', 
+    parser.add_argument('--dry-run', action='store_true',
                         help='starts building process at temporary branches and does not perform any changes to real branches')
     parser.add_argument('--quiet', action='store_true',
                         help='will not ask questions during building process (except failed chery-picks)')
