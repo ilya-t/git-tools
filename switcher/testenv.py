@@ -36,6 +36,8 @@ class TestEnvTestCase(TestCase):
                                  universal_newlines=True,
                                  cwd=REPO_DIR) as p:
                 retcode = p.wait()
+
                 if retcode != 0:
-                    self.fail('failed to execute command:' + command + "\nOutput:\n"+
-                              '\n'.join(p.stdout.readlines()))
+                    self.fail('failed to execute command:' + command + "\nOutput:\n" +
+                              '\n'.join(p.stdout.readlines()) + '\n' +
+                              '\n'.join(p.stderr.readlines()))
