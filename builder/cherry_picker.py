@@ -108,7 +108,7 @@ class Picker:
 
         return current_hash == new_hash
 
-    def capture_output(self, cmd: str, fallback=None):
+    def capture_output(self, cmd: str, fallback=None) -> str:
         try:
             return subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
         except subprocess.CalledProcessError as e:

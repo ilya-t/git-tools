@@ -22,6 +22,9 @@ CONFIG_BRANCH_CONTENT_MESSAGE = 'message'
 
 def start_flow(config: [dict], input_provider: Callable[[], str], force_update: bool = False, dry_run: bool = False,
                quiet: bool = False):
+    if has_uncommited_changes():
+        print('Please commit or stash changes before building!')
+        return
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
@@ -59,6 +62,11 @@ def start_flow(config: [dict], input_provider: Callable[[], str], force_update: 
             print('    git push origin ' + branch + ':' + branch + ' --force')
 
     print('')
+
+
+def has_uncommited_changes() -> bool:
+    output = subprocess.check_output('git status --short', cwd=CWD, universal_newlines=True, shell=True)
+    return output.replace('\n', '') != ''
 
 
 def parse_yaml(config) -> [dict]:

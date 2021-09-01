@@ -159,6 +159,29 @@ class ConflictsTestCase(WorkFlowTestCase):
         self.assertEqual('', self.capture_cmd_output('git diff'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
 
+    def test_build_wont_start_when_have_staged_changes(self):
+        self.run_cmd(
+            'git checkout feature_1',
+            'echo staged > f2_file',
+            'git add f2_file'
+        )
+        diff_before = self.capture_cmd_output('git diff')
+        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
+                                        input_provider=lambda: self.pop_input())
+        diff_after = self.capture_cmd_output('git diff')
+        self.assertEqual(diff_after, diff_before)
+
+    def test_build_wont_start_when_have_unstaged_changes(self):
+        self.run_cmd(
+            'git checkout feature_1',
+            'echo changed > f2_file'
+        )
+        diff_before = self.capture_cmd_output('git diff')
+        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
+                                        input_provider=lambda: self.pop_input())
+        diff_after = self.capture_cmd_output('git diff')
+        self.assertEqual(diff_after, diff_before)
+
     def pop_input(self):
         self.assertFalse(self.input_queue.empty(), 'Queue is empty but input requested!')
         input = self.input_queue.get()
