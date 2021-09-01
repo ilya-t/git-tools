@@ -23,8 +23,9 @@ CONFIG_BRANCH_CONTENT_MESSAGE = 'message'
 def start_flow(config: [dict], input_provider: Callable[[], str], force_update: bool = False, dry_run: bool = False,
                quiet: bool = False):
     if has_uncommited_changes():
-        print('Please commit or stash changes before building!')
-        return
+        if not try_commit_changes(config, input_provider):
+            print('Please commit or stash changes before building!')
+            return
     log('\n==== Updating branches at: {} ===='.format(CWD))
     affected = []
 
@@ -163,6 +164,70 @@ def capture_current_branch() -> str:
     cmd = 'git rev-parse --abbrev-ref HEAD'
     output = subprocess.check_output(cmd, cwd=CWD, universal_newlines=True, shell=True)
     return str(output.splitlines()[0])
+
+
+def try_commit_changes(config, input_provider: Callable[[], str]) -> bool:
+    current_branch = capture_current_branch()
+    current_branch_configs = list(filter(lambda e: e[OUTPUT] == current_branch,config))
+
+    if len(current_branch_configs) != 1:
+        return False
+
+    branch_config = current_branch_configs[0]
+
+    if len(branch_config[BRANCH_CONTENTS]) == 0:
+        return False
+
+    head_content_desc = branch_config[BRANCH_CONTENTS][-1]
+
+    if head_content_desc.get(BR_CONTENT_MSG,'') == '':
+        return False
+
+    can_commit_to_head = head_content_desc[BR_CONTENT_COMMIT] == current_branch+'~0'
+    if not can_commit_to_head:
+        return False
+
+    def get_commit_hash(commit_link: str) -> str:
+        cmd = 'git rev-parse ' + commit_link
+        output = subprocess.check_output(cmd, cwd=CWD, universal_newlines=True, shell=True)
+        return str(output.splitlines()[0])
+
+    head_commit_hash = get_commit_hash(head_content_desc[BR_CONTENT_COMMIT])
+    basement_commit_hash = get_commit_hash(branch_config[BASEMENT])
+
+    should_amend = head_commit_hash != basement_commit_hash
+
+    print('Got uncommitted changes:')
+    os.system('cd ' + CWD + ' && git status')
+
+    if should_amend:
+        question = 'Amend all of them to head commit with message "'+head_content_desc[BR_CONTENT_MSG]+'"?'
+    else:
+        question = 'Commit all of them to head commit with message "'+head_content_desc[BR_CONTENT_MSG]+'"?'
+
+    if cherry_picker.query_yes_no(question, input_provider, default='yes') != 'yes':
+        return False
+
+    amend = ''
+    if should_amend:
+        amend = '--amend'
+    print(run_cmd('git commit '+amend+' --all --message="' + head_content_desc[BR_CONTENT_MSG] + '"'))
+    return True
+
+
+def run_cmd(command) -> str:
+    with subprocess.Popen(command,
+                          shell=True,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          universal_newlines=True,
+                          cwd=CWD) as p:
+        retcode = p.wait()
+        if retcode != 0:
+            raise Exception('failed to execute command:' + command + "\nOutput:\n" +
+                      '\n'.join(p.stdout.readlines()) + '\n' +
+                      '\n'.join(p.stderr.readlines()))
+        return ''.join(p.stdout.readlines())
 
 
 if __name__ == '__main__':

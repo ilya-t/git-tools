@@ -70,3 +70,5 @@ class RepoTestCase(unittest.TestCase):
                     self.fail('failed to execute command:' + command + "\nOutput:\n" +
                               '\n'.join(p.stdout.readlines()) + '\n' +
                               '\n'.join(p.stderr.readlines()))
+                # else:
+                #     print(p.stdout.readlines())

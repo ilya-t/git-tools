@@ -146,7 +146,7 @@ class ConflictsTestCase(WorkFlowTestCase):
         workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
                                         input_provider=lambda: self.pop_input())
 
-        self.assertEqual('', self.capture_cmd_output('git diff'))
+        self.assertEqual('', self.capture_cmd_output('git status --short'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
 
     def test_cherry_pick_decline_should_stop_flow(self):
@@ -156,7 +156,7 @@ class ConflictsTestCase(WorkFlowTestCase):
         workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
                                         input_provider=lambda: self.pop_input())
 
-        self.assertEqual('', self.capture_cmd_output('git diff'))
+        self.assertEqual('', self.capture_cmd_output('git status --short'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
 
     def test_build_wont_start_when_have_staged_changes(self):
@@ -165,21 +165,42 @@ class ConflictsTestCase(WorkFlowTestCase):
             'echo staged > f2_file',
             'git add f2_file'
         )
-        diff_before = self.capture_cmd_output('git diff')
+        self.set_input('no')
+        diff_before = self.capture_cmd_output('git status --short')
         workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
                                         input_provider=lambda: self.pop_input())
-        diff_after = self.capture_cmd_output('git diff')
+        diff_after = self.capture_cmd_output('git status --short')
         self.assertEqual(diff_after, diff_before)
+
+    def test_build_will_commit_staged_changes_to_head(self):
+        self.run_cmd(
+            'git checkout feature_1',
+            'echo staged > f1_extra_file',
+            'git add f1_extra_file'
+        )
+        diff_before = self.capture_cmd_output('git status --short')
+        self.assertTrue('f1_extra_file' in diff_before, msg='Diff not contains expected file!\nDiff:'+diff_before)
+        self.set_input(
+            'yes', # amend commit?
+            'yes' # assembled properly?
+        )
+
+        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
+                                        input_provider=lambda: self.pop_input())
+        diff_after = self.capture_cmd_output('git status --short')
+        self.assertNotEqual(diff_after, diff_before)
+        self.assertTrue(os.path.isfile(testenv.REPO_DIR + '/f1_extra_file'))
 
     def test_build_wont_start_when_have_unstaged_changes(self):
         self.run_cmd(
             'git checkout feature_1',
             'echo changed > f2_file'
         )
-        diff_before = self.capture_cmd_output('git diff')
+        self.set_input('no')
+        diff_before = self.capture_cmd_output('git status --short')
         workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
                                         input_provider=lambda: self.pop_input())
-        diff_after = self.capture_cmd_output('git diff')
+        diff_after = self.capture_cmd_output('git status --short')
         self.assertEqual(diff_after, diff_before)
 
     def pop_input(self):
