@@ -96,17 +96,23 @@ class Picker:
         current_basement = self.target_branch + '~' + str(cherry_picks_count)
 
         commit_count = int(self.capture_output('git rev-list --count ' + self.target_branch, fallback=lambda: '-1'))
+        rebuild_msg = 'Going to rebuild "'+self.target_branch+'": '
 
         if commit_count == -1: # branch not exists so it needs to be updated
+            print(rebuild_msg + 'branch yet not exists')
             return False
 
         if commit_count < cherry_picks_count:
+            print(rebuild_msg + 'branch has less commits than expected')
             return False
 
         current_hash = self.capture_output('git rev-parse ' + current_basement)
         new_hash = self.capture_output('git rev-parse ' + self.basement_branch)
 
-        return current_hash == new_hash
+        up_to_date_with_base = current_hash == new_hash
+        if not up_to_date_with_base:
+            print(rebuild_msg + 'basement of branch has changed ('+self.basement_branch+')')
+        return up_to_date_with_base
 
     def capture_output(self, cmd: str, fallback=None) -> str:
         try:
