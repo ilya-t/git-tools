@@ -37,7 +37,7 @@ def start_flow(config: [dict], input_provider: Callable[[], str], force_update: 
         contents: [object] = item[BRANCH_CONTENTS]
         picker = cherry_picker.Picker(target_branch=target_branch, basement_branch=basement_branch,
                                       branch_contents=contents, cwd=CWD, log_file=LOG_FILE,
-                                      input_provider=input_provider, verbose_ouput=False, dry_run=dry_run,
+                                      input_provider=input_provider, verbose_ouput=not quiet, dry_run=dry_run,
                                       assume_assembled_properly=quiet)
 
         if not force_update and picker.up_to_date():
