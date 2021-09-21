@@ -136,18 +136,16 @@ class Picker:
         return retcode == 0
 
     def amend(self, message: str) -> bool:
-        existing_message = self.capture_output('git show --no-patch --format=%B HEAD~0')
+        existing_message = self.capture_output('git show --no-patch --format=%B HEAD~0').strip()
+        message = message.strip()
         message_up_to_date : bool = existing_message == message
             
         if message_up_to_date:
             print('Skipping amend cause message is up-to-date')
             return True
         
-        if self.verbose:
-            print('Overwriting existing message "'+existing_message+'"')
-            print('With own message: "'+message+'"')
-        else:
-            print('Adding own message')
+        print('Overwriting existing message "'+existing_message+'"')
+        print('With own message: "'+message+'"')
 
         retcode = self.run_cmd('git commit --amend --message="'+message+'"')
         return retcode == 0
