@@ -39,6 +39,6 @@ where `branch_map.yml` may look like this:
 ```
 
 If something went wrong you may check `assembly.log` file that keeps references to all previous commits.
-See another samples:
-- [config for rebuilding above single branch](./tests/multi_base_workspace.yml)
-- [config for rebuilding with multple basement branches](./tests/single_base_workspace.yml)
+See other samples that show various styles of describing branches structure:
+- [config for rebuilding above single branch](./tests/single_base_workspace.yml)
+- [config for rebuilding with multple basement branches](./tests/multi_base_workspace.yml)
