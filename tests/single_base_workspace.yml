@@ -4,7 +4,7 @@
     - commit: dev~0 # that consists of its head~0 commit
 
   - feature_1: # mixed form of branch assembly
-    - feature_1~2
+    - message: "add f1_to_be_deleted" # commit spec will be resolved automatically as "feature_1~2"
     - ~1
     - commit: feature_1~0
       message: "custom commit on feature_1 branch"

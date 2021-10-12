@@ -110,15 +110,23 @@ def extract_rebuild_configs(config, basement) -> [dict]:
                         BR_CONTENT_MSG: None
                     })
                 elif isinstance(raw_content, dict):  # long form
+                    message = raw_content.get(CONFIG_BRANCH_CONTENT_MESSAGE, None)
+                    commit = raw_content.get(CONFIG_BRANCH_CONTENT_COMMIT, None)
+
+                    if not message and not commit:
+                        raise Exception('Wrong rebuild config! Specify either "message" or "commit"!', raw_content, '"')
                     branch_contents.append({
-                        BR_CONTENT_COMMIT: raw_content[CONFIG_BRANCH_CONTENT_COMMIT],
-                        BR_CONTENT_MSG: raw_content.get(CONFIG_BRANCH_CONTENT_MESSAGE, None)
+                        BR_CONTENT_COMMIT: commit,
+                        BR_CONTENT_MSG: message
                     })
         else:
             raise Exception('Unknown rebuild branch format"', config_node, '"')
 
-        for c in branch_contents:
-            c[BR_CONTENT_COMMIT] = as_long_form(commit_ref=c[BR_CONTENT_COMMIT], branch=branch_to_rebuild)
+        for i, c in enumerate(reversed(branch_contents)):
+            commit : str = c.get(BR_CONTENT_COMMIT, None)
+            if not commit: # only message specified, trying to resolve commit automatically
+                commit = '~' + str(i)
+            c[BR_CONTENT_COMMIT] = as_long_form(commit_ref=commit, branch=branch_to_rebuild)
 
         results.append({
             OUTPUT: branch_to_rebuild,
