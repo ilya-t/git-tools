@@ -7,7 +7,7 @@
     - message: "add f1_to_be_deleted" # commit spec will be resolved automatically as "feature_1~2"
     - ~1
     - commit: feature_1~0
-      message: "custom commit on feature_1 branch"
+      message: "custom commit on \"feature_1\" branch"
 
   - feature_2~0 # third branch 'feature_2' in short assemble form:
                 # consists of its head~0 commit and will be assembled on top of 'feature_1'

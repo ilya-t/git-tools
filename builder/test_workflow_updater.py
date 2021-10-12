@@ -73,7 +73,7 @@ class MultiAmendTestCase(WorkFlowTestCase):
         self.assertFalse(os.path.exists(testenv.REPO_DIR + '/f1_to_be_deleted'))
 
     def test_feature1_has_custom_commit_message(self):
-        self.assertCommitMessage(branch='feature_1', expected_message='custom commit on feature_1 branch')
+        self.assertCommitMessage(branch='feature_1', expected_message='custom commit on "feature_1" branch')
 
     def test_feature1_has_custom_commit_message_and_valid_content(self):
         self.assertCommitMessage(branch='feature_1~2', expected_message='add f1_to_be_deleted')

@@ -147,7 +147,10 @@ class Picker:
         print('Overwriting existing message "'+existing_message+'"')
         print('With own message: "'+message+'"')
 
-        retcode = self.run_cmd('git commit --amend --message="'+message+'"')
+        tmp_commit_file = '/tmp/builder_commit_message'
+        with open(tmp_commit_file, "w") as text_file:
+            text_file.write(message)
+        retcode = self.run_cmd('git commit --amend --file='+tmp_commit_file)
         return retcode == 0
 
     def run_cmd(self, command: str, fallback: Callable[[], None] = None, log_output: bool = False, print_output: bool = True):
