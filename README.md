@@ -32,11 +32,10 @@ where `branch_map.yml` may look like this:
     - tests_for_x:                                  # second branch that will be assembled on top of 'feature_x_branch'
       - message: "cover feature x with smoke tests" # 'commit' it will be resolved automatically as `commit: tests_for_x~1`
       - message: "add extra test for test-case #42" # another omitted 'commit', resolves as `commit: tests_for_x~0`
-    - bugfixes_for_x:                      # third branch that will be assembled on top of 'tests_for_x' 
-      - message: "bugfix of test-case #17" # 
 
-  - feature_2~0 # third branch 'feature_2' in short assemble form:
-                # consists of its head~0 commit and will be assembled on top of 'feature_1'```
+    - bugfixes_for_x~0 # third branch described in short form that is similar to:
+                       # - bugfixes_for_x: 
+                       #   - commit: bugfixes_for_x~0 
 ```
 
 If something went wrong you may check `assembly.log` file that keeps references to all previous commits.
