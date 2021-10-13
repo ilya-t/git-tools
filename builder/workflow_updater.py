@@ -159,7 +159,7 @@ def process_config(yaml_config: str,
 
     with open(yaml_config, 'r') as config_file:
         try:
-            config = yaml.load(config_file)
+            config = yaml.load(config_file, Loader=yaml.FullLoader)
             start_flow(parse_yaml(config), input_provider, force_update, dry_run, quiet)
         except yaml.YAMLError as exc:
             raise Exception(exc)
