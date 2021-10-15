@@ -19,36 +19,13 @@ class WorkFlowTestCase(testenv.RepoTestCase):
         pass
 
     def amend(self, branch, amended_file):
-        self.run_cmd(
-            "git checkout " + branch,
-            "echo '" + amended_file + " file amended!' > " + amended_file,
-            "git commit --all --amend --message 'amended " + amended_file + "'",
-        )
+        self._repo_helper.amend(branch, amended_file)
 
     def assertCommitMessage(self, branch, expected_message):
-        self.run_cmd('git checkout ' + branch)
-        command = 'git log -1 --oneline'
-        with subprocess.Popen(command,
-                              shell=True,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              universal_newlines=True,
-                              cwd=testenv.REPO_DIR) as p:
-            retcode = p.wait()
-            if retcode != 0:
-                self.fail('failed to execute command:' + command + "\nOutput:\n" +
-                          '\n'.join(p.stdout.readlines()) + '\n' +
-                          '\n'.join(p.stderr.readlines()))
-            out = ''.join(p.stdout.readlines())
-
-            self.assertTrue(expected_message in out, msg='Commit message not contains "' + expected_message + '"! ' +
-                                                         'Instead got:' + out)
+        self._repo_helper.assertCommitMessage(branch, expected_message)
 
     def assertFileAmended(self, file):
-        with open(testenv.REPO_DIR + '/' + file, mode='r') as f:
-            f1_file_body = f.readline()
-            f.close()
-        self.assertEqual(file + ' file amended!\n', f1_file_body)
+        self._repo_helper.assertFileAmended(file)
 
 
 class MultiAmendTestCase(WorkFlowTestCase):
@@ -226,6 +203,27 @@ class ConflictsTestCase(WorkFlowTestCase):
                               cwd=testenv.REPO_DIR) as p:
             stdout, stderr = p.communicate()
             return stdout
+
+# class MultiReposTestCase(WorkFlowTestCase):
+#     def setUp(self):
+#         super().setUp()
+#         self._repo1 = testenv.RepoHelper(self, testenv.TEST_DIR + '/repo1')
+#         self._repo1.init_repo()
+#         self._repo1.amend(branch='dev', amended_file='dev_file')
+
+#         self._repo2 = testenv.RepoHelper(self, testenv.TEST_DIR + '/repo2')
+#         self._repo2.init_repo()
+#         self._repo2.amend(branch='feature_1', amended_file='f1_file')
+#         workflow_updater.process_config(testenv.TEST_DIR + '/multi_repo_workspace.yml', cherry_picker.always_confirm)
+
+#     def test_feature1_file_amended(self):
+#         self._repo2.assertFileAmended(self, 'f1_file')
+
+#     def test_dev_file_amended(self):
+#         self._repo1.assertFileAmended(self, 'dev_file')
+
+#     def test_feature1_deleted_file(self):
+#         self.assertFalse(os.path.exists(testenv.TEST_DIR + '/repo2/f1_to_be_deleted'))
 
 
 if __name__ == '__main__':

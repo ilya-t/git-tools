@@ -3,6 +3,7 @@ set -e
 
 mkdir -p ./reports/
 set +e
+rm -rf ./repo-cache
 cd ../builder
 ../toolsenv/bin/pytest --html=../tests/reports/builder_report.html --self-contained-html ./test_*.py
 BUILDER_RET_CODE=$?
