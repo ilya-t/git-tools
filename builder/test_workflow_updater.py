@@ -7,12 +7,12 @@ from queue import Queue
 import cherry_picker
 import testenv
 import workflow_updater
+from workflow_updater import WorkflowBuilder
 
 
 class WorkFlowTestCase(testenv.RepoTestCase):
     def setUp(self):
         super().setUp()
-        workflow_updater.CWD = testenv.REPO_DIR
 
     def tearDown(self):
         super().tearDown()  # comment to keep test env
@@ -35,7 +35,9 @@ class MultiAmendTestCase(WorkFlowTestCase):
         self.amend(branch='dev', amended_file='dev_file')
         self.amend(branch='feature_2', amended_file='f2_file')
         self.run_cmd('git checkout feature_2')
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm)
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=cherry_picker.always_confirm).start()
 
     def test_feature1_file_amended(self):
         self.assertFileAmended('f1_file')
@@ -67,7 +69,9 @@ class MultiBasementBranchTestCase(WorkFlowTestCase):
         self.hotfix_log = self.captureLog('hotfix')
         self.f2_log = self.captureLog('feature_2')
 
-        workflow_updater.process_config(testenv.TEST_DIR + '/multi_base_workspace.yml', cherry_picker.always_confirm)
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/multi_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=cherry_picker.always_confirm).start()
 
     def test_feature1_file_amended(self):
         self.run_cmd('git checkout feature_1')
@@ -111,7 +115,9 @@ class ConflictsTestCase(WorkFlowTestCase):
 
     def test_already_on_tmp_branch_has_no_effect(self):
         self.run_cmd('git checkout -b tmp/feature_1')
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml', cherry_picker.always_confirm)
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=cherry_picker.always_confirm).start()
         self.assertFileAmended('f1_file')
 
     def test_cherry_pick_conflicts_abort_should_stop_flow(self):
@@ -124,8 +130,9 @@ class ConflictsTestCase(WorkFlowTestCase):
 
         self.set_input('no')
 
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input())
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=lambda: self.pop_input()).start()
 
         self.assertEqual('', self.capture_cmd_output('git status --short'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
@@ -134,8 +141,9 @@ class ConflictsTestCase(WorkFlowTestCase):
         self.amend(branch='dev', amended_file='dev_file')
         self.set_input('no')
 
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input())
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=lambda: self.pop_input()).start()
 
         self.assertEqual('', self.capture_cmd_output('git status --short'))
         self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
@@ -148,8 +156,9 @@ class ConflictsTestCase(WorkFlowTestCase):
         )
         self.set_input('no')
         diff_before = self.capture_cmd_output('git status --short')
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input())
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=lambda: self.pop_input()).start()
         diff_after = self.capture_cmd_output('git status --short')
         self.assertEqual(diff_after, diff_before)
 
@@ -166,8 +175,9 @@ class ConflictsTestCase(WorkFlowTestCase):
             'yes' # assembled properly?
         )
 
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input())
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=lambda: self.pop_input()).start()
         diff_after = self.capture_cmd_output('git status --short')
         self.assertNotEqual(diff_after, diff_before)
         self.assertTrue(os.path.isfile(testenv.REPO_DIR + '/f1_extra_file'))
@@ -179,8 +189,9 @@ class ConflictsTestCase(WorkFlowTestCase):
         )
         self.set_input('no')
         diff_before = self.capture_cmd_output('git status --short')
-        workflow_updater.process_config(testenv.TEST_DIR + '/single_base_workspace.yml',
-                                        input_provider=lambda: self.pop_input())
+        WorkflowBuilder(yaml_config=testenv.TEST_DIR + '/single_base_workspace.yml',
+                        cwd=testenv.REPO_DIR,
+                        input_provider=lambda: self.pop_input()).start()
         diff_after = self.capture_cmd_output('git status --short')
         self.assertEqual(diff_after, diff_before)
 
@@ -204,27 +215,35 @@ class ConflictsTestCase(WorkFlowTestCase):
             stdout, stderr = p.communicate()
             return stdout
 
-# class MultiReposTestCase(WorkFlowTestCase):
-#     def setUp(self):
-#         super().setUp()
-#         self._repo1 = testenv.RepoHelper(self, testenv.TEST_DIR + '/repo1')
-#         self._repo1.init_repo()
-#         self._repo1.amend(branch='dev', amended_file='dev_file')
 
-#         self._repo2 = testenv.RepoHelper(self, testenv.TEST_DIR + '/repo2')
-#         self._repo2.init_repo()
-#         self._repo2.amend(branch='feature_1', amended_file='f1_file')
-#         workflow_updater.process_config(testenv.TEST_DIR + '/multi_repo_workspace.yml', cherry_picker.always_confirm)
+class MultiReposTestCase(WorkFlowTestCase):
+    def setUp(self):
+        super().setUp()
+        self._repo1 = testenv.RepoHelper(self, '/tmp/test_repos/repo1')
+        self._repo1.init_repo()
+        self._repo1.amend(branch='dev', amended_file='dev_file')
+        self._repo1.amend(branch='hotfix', amended_file='hotfix_file')
 
-#     def test_feature1_file_amended(self):
-#         self._repo2.assertFileAmended(self, 'f1_file')
+        self._repo2 = testenv.RepoHelper(self, '/tmp/test_repos/repo2')
+        self._repo2.init_repo()
+        self._repo2.amend(branch='feature_1', amended_file='f1_file')
+        self._repo2.amend(branch='hotfix', amended_file='hotfix_file')
+        WorkflowBuilder(
+            yaml_config=testenv.TEST_DIR + '/multi_repo_workspace.yml',
+            cwd = self._repo1._repo_dir,
+            input_provider=cherry_picker.always_confirm
+        ).start()
+        WorkflowBuilder(
+            yaml_config=testenv.TEST_DIR + '/multi_repo_workspace.yml',
+            cwd = self._repo2._repo_dir,
+            input_provider=cherry_picker.always_confirm
+        ).start()
 
-#     def test_dev_file_amended(self):
-#         self._repo1.assertFileAmended(self, 'dev_file')
+    def test_repo1_processed_with_repo1_config(self):
+        self._repo1.assertCommitMessage(branch='dev', expected_message='edited by repo1 config')
 
-#     def test_feature1_deleted_file(self):
-#         self.assertFalse(os.path.exists(testenv.TEST_DIR + '/repo2/f1_to_be_deleted'))
-
+    def test_repo2_processed_with_repo2_config(self):
+        self._repo2.assertCommitMessage(branch='dev', expected_message='edited by repo2 config')
 
 if __name__ == '__main__':
     unittest.main()

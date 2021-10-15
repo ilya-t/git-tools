@@ -1,14 +1,14 @@
-# workspace with single basement branch config example:
 - repo: /tmp/test_repos/repo1
-  basement: "master"
-  branches: # basement branch, on top of which all other will be assembled
-    - dev: # first branch to assemble on top of 'master'
-      - commit: dev~0 # that consists of its head~0 commit
+  basement: master
+  branches:
+    - hotfix~0
+    - dev:
+      - message: "edited by repo1 config"
 
 - repo: /tmp/test_repos/repo2
-  basement: "master"
-  branches: # basement branch, on top of which all other will be assembled
-    - feature_1: # branch to assemble on top of 'dev' that consists of 3 commits written on 'short form'
-      - ~2 # same as 'feature_1~2'
-      - ~1 # same as 'feature_1~1'
-      - ~0 # same as 'feature_1~0'
+  basement: master
+  branches:
+    - hotfix~0
+    - dev:
+      - message: "edited by repo2 config"
+
