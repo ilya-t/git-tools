@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 set -e
-
 git init
 git config --local user.email "user@email.com"
 git config --local user.name "UserName"

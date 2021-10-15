@@ -76,14 +76,17 @@ class RepoHelper:
             os.makedirs(self._repo_dir)
 
         if ENABLE_REPO_CACHING and os.path.exists(cached_repo_path+'/.git'):
+            shutil.rmtree(self._repo_dir)
+            os.makedirs(self._repo_dir)
             self.run_cmd('cp -R '+cached_repo_path+' '+self._repo_dir)
             return
 
         self.run_cmd(TEST_DIR + '/init.sh')
         
         if ENABLE_REPO_CACHING:
-            if not os.path.exists(cached_repo_path):
-                os.makedirs(cached_repo_path)
+            if os.path.exists(cached_repo_path):
+                shutil.rmtree(cached_repo_path)
+            os.makedirs(cached_repo_path)
             self.run_cmd('cp -R '+self._repo_dir + ' '+cached_repo_path)
 
     def run_cmd(self, *commands):
