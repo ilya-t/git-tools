@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import os
-import shutil
 import subprocess
 import unittest
 
-import clean_merged
+import run_cleaner
 import testenv
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__)+'/../tests')
@@ -22,7 +21,7 @@ class CleanMergedTestCase(testenv.TestEnvTestCase):
             'git merge hotfix --message "hotifx merged after dev"'
         )
 
-        clean_merged.Cleaner(
+        run_cleaner.Cleaner(
             cwd=self.test_repo_dir,
             upstream='master',
             suppress_prompt=True,

@@ -1,2 +1,5 @@
+# builder
 PyYaml
 argparse
+# cleaner/switcher
+colorama

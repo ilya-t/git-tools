@@ -2,7 +2,6 @@
 import os
 import subprocess
 import sys
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)+'/../builder'))
 import branch_filter
 
 class Cleaner:
@@ -108,7 +107,7 @@ def find_dot_git(path):
         return find_dot_git(os.path.dirname(candidate))
 
 
-REPO_PATH = find_dot_git('.')
+REPO_PATH = find_dot_git('../cleaner')
 
 def query_yes_no(question, default='yes'):
     '''Ask a yes/no question via raw_input() and return their answer.
