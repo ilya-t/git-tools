@@ -10,9 +10,6 @@ BUILDER_RET_CODE=$?
 cd ../cleaner
 ../toolsenv/bin/pytest --html=../tests/reports/cleaner_report.html --self-contained-html ./test_*.py
 CLEANER_RET_CODE=$?
-cd ../switcher
-../toolsenv/bin/pytest --html=../tests/reports/switcher_report.html --self-contained-html ./test_*.py
-SWITCHER_RET_CODE=$?
 cd ..
 
 echo "See test reports: "
@@ -31,13 +28,6 @@ if [ "$CLEANER_RET_CODE" != "0" ]; then
     RETCODE=1
 else
     echo "  ./reports/cleaner_report.html"
-fi
-
-if [ "$SWITCHER_RET_CODE" != "0" ]; then
-    echo "  ./reports/switcher_report.html (FAILED)"
-    RETCODE=1
-else
-    echo "  ./reports/switcher_report.html"
 fi
 
 exit $RETCODE

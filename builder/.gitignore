@@ -1,4 +1,5 @@
 assembly.log
+delete.log
 __pycache__
 .idea
 *.pyc

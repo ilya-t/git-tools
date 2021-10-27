@@ -2,7 +2,7 @@
 import os
 import subprocess
 import sys
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)+'/../switcher'))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)+'/../builder'))
 import branch_filter
 
 class Cleaner:

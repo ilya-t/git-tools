@@ -136,3 +136,37 @@ class RepoHelper:
             f1_file_body = f.readline()
             f.close()
         self._test_case.assertEqual(file + ' file amended!\n', f1_file_body)
+
+class TestEnvTestCase(unittest.TestCase):
+    def setUp(self):
+        self.test_repo_dir=REPO_DIR
+        self.cleanup()
+        self.init_repo()
+        self.assertTrue(os.path.exists(REPO_DIR + '/README.md'))
+
+    def tearDown(self):
+        self.cleanup()
+
+    def cleanup(self):
+        if os.path.exists(REPO_DIR):
+            shutil.rmtree(REPO_DIR)
+
+    def init_repo(self):
+        if not os.path.exists(REPO_DIR):
+            os.makedirs(REPO_DIR)
+        self.run_cmd(TEST_DIR + '/init.sh')
+
+    def run_cmd(self, *commands):
+        for command in commands:
+            with    subprocess.Popen(command,
+                                 shell=True,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 universal_newlines=True,
+                                 cwd=REPO_DIR) as p:
+                retcode = p.wait()
+
+                if retcode != 0:
+                    self.fail('failed to execute command:' + command + "\nOutput:\n" +
+                              '\n'.join(p.stdout.readlines()) + '\n' +
+                              '\n'.join(p.stderr.readlines()))
