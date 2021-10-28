@@ -11,7 +11,7 @@ SOURCE_REMOTE = 'all remote branches'  # no supported yet
 class BranchFilter:
     def __init__(self,
                  custom_branches: [str] = None, # custom list of real branches
-                 synthetic_branches: [dict[str, str]] = None, # custom not existent branches
+                 synthetic_branches: [dict] = None, # custom not existent branches
                  input_provider=lambda: input().lower(),
                  cwd=os.path.abspath('')):
         self.cwd = cwd
