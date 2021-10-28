@@ -16,11 +16,12 @@ class BranchFilter:
                  cwd=os.path.abspath('')):
         self.cwd = cwd
         self.provide_input = input_provider
+        self.all_branches: list[str] = []
         branches_str = self.capture_output('git branch')
 
         if custom_branches:
             self.all_branches: list[str] = custom_branches
-        else:
+        elif not synthetic_branches:
             # TODO sorted(key=lambda key: sort_case)
             self.all_branches: list[str] = branches_str.replace('* ', '').replace(' ', '').splitlines()
             self.all_branches = sorted(self.all_branches, reverse=True)
@@ -32,7 +33,7 @@ class BranchFilter:
                 branch_name = s['name']
                 commit_msg = s['commit']
                 if not commit_msg:
-                    commit_msg = '<???>'
+                    commit_msg = self._get_commit_message(s['ref'])
                 self.head_commits[branch_name] = commit_msg
                 self.all_branches.append(branch_name)
 
@@ -41,17 +42,20 @@ class BranchFilter:
         for branch in self.all_branches:
             if branch in self.head_commits:
                 continue
-            try:
-                full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + branch + '~0)')
-                fisrt_return = full_commit_log.index('\n')
-                full_commit_log = full_commit_log[0:fisrt_return]
-            except:
-                full_commit_log = '<BRANCH NOT FOUND>'
-                pass
-            self.head_commits[branch] = full_commit_log
+            self.head_commits[branch] = self._get_commit_message(branch+'~0')
 
         self.selected_branches = []
         self.selection_finished = False
+
+    def _get_commit_message(self, revision: str) -> str:
+        try:
+            full_commit_log = self.capture_output('git show -s --format=%B $(git rev-parse ' + revision + ')')
+            fisrt_return = full_commit_log.index('\n')
+            full_commit_log = full_commit_log[0:fisrt_return]
+        except:
+            full_commit_log = '<BRANCH NOT FOUND>'
+            pass
+        return full_commit_log
 
     def extend_selected(self, selected):
         self.selected_branches.extend(selected)
