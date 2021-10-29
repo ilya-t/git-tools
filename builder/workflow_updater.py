@@ -93,7 +93,7 @@ class WorkflowBuilder:
         print('')
 
     def has_uncommited_changes(self) -> bool:
-        output = subprocess.check_output('git status --short', cwd=self.cwd, universal_newlines=True, shell=True)
+        output = subprocess.check_output('git status --short --untracked-files=no', cwd=self.cwd, universal_newlines=True, shell=True)
         return output.replace('\n', '') != ''
 
     def parse_yaml(self, config: dict) -> [dict]:
