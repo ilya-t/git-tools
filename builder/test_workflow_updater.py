@@ -185,7 +185,7 @@ class ConflictsTestCase(WorkFlowTestCase):
     def test_build_wont_start_when_have_unstaged_changes(self):
         self.run_cmd(
             'git checkout feature_1',
-            'echo changed > f2_file'
+            'echo changed > f1_file'
         )
         self.set_input('no')
         diff_before = self.capture_cmd_output('git status --short')
