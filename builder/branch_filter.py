@@ -133,6 +133,7 @@ class BranchFilter:
         for branch in branches_to_print:
             self.print_branch_desc(branch)
 
+        print('\n( found:', len(self.selected_branches), ')')
         print('\nType part of branch name or commit message to keep it or empty line to end search:')
 
     def print_branch_desc(self, branch):
