@@ -81,7 +81,7 @@ class BranchFilter:
     def run_flow(self, flow_message, input_handler, finish_criterion):
         flow_message()
 
-        input_handler(self.provide_input())
+        input_handler(self.provide_input().lower())
 
         if finish_criterion():
             return

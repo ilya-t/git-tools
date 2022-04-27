@@ -13,7 +13,6 @@ def mixed_input(params_queue):
     if params_queue.empty():
         return input().lower()
     item = params_queue.get()
-    print(item)
     return item
 
 
