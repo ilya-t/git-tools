@@ -1,8 +1,9 @@
 #!/usr/bin/env sh
 set -e
-git init
+git init --initial-branch=master
 git config --local user.email "user@email.com"
 git config --local user.name "UserName"
+
 # master commits
 echo "#temporary repository!" > README.md
 git add README.md

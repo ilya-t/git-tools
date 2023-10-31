@@ -146,7 +146,8 @@ class ConflictsTestCase(WorkFlowTestCase):
                         input_provider=lambda: self.pop_input()).start()
 
         self.assertEqual('', self.capture_cmd_output('git status --short'))
-        self.assertIn(member='master', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
+        # will return to nearest basement
+        self.assertIn(member='dev', container=self.capture_cmd_output('git rev-parse --abbrev-ref HEAD'))
 
     def test_build_wont_start_when_have_staged_changes(self):
         self.run_cmd(
