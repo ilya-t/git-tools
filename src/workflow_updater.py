@@ -64,7 +64,7 @@ class WorkflowBuilder:
             picker = cherry_picker.Picker(target_branch=target_branch, basement_branch=basement_branch,
                                           branch_contents=contents, cwd=self.cwd, log_file=self.log_file,
                                           input_provider=self.input_provider, verbose_ouput=not self.quiet, dry_run=self.dry_run,
-                                          assume_assembled_properly=self.quiet)
+                                          assume_assembled_properly=self.quiet, fallback_branch=basement_branch)
 
             if not self.force_update and picker.up_to_date():
                 print('Branch "' + picker.target_branch + '" already up-to-date with basement "' +

@@ -27,7 +27,8 @@ class Picker:
                  cwd: str = os.path.abspath(''),
                  verbose_ouput: bool = True,
                  dry_run: bool = False,
-                 assume_assembled_properly: bool = False):
+                 assume_assembled_properly: bool = False,
+                 fallback_branch: str = FALLBACK_BRANCH):
         self.target_branch = target_branch
         self.basement_branch = basement_branch
 
@@ -38,6 +39,7 @@ class Picker:
         self.cwd = cwd
         self.dry_run = dry_run
         self.assume_assembled_properly = assume_assembled_properly
+        self.fallback_branch = fallback_branch
 
         self.verbose = verbose_ouput
 
@@ -45,7 +47,7 @@ class Picker:
         return self.cherry_pick()
 
     def cherry_pick(self):
-        tmp_branch = 'tmp/' + self.target_branch
+        tmp_branch = 'temp/' + self.target_branch
         self.run_cmd('git checkout ' + self.basement_branch, print_output=False)
         self.run_cmd('git branch -D ' + tmp_branch, print_output=False, log_output=True, fallback=lambda: None)
         print('Building at: ' + tmp_branch + ' (based on ' + self.basement_branch + ')')
@@ -79,7 +81,7 @@ class Picker:
             return True
         else:
             print('Cleaning temporary branch: ' + tmp_branch)
-            self.run_cmd('git checkout ' + FALLBACK_BRANCH + ' && git branch -D ' + tmp_branch)
+            self.run_cmd('git checkout ' + self.fallback_branch + ' && git branch -D ' + tmp_branch)
             self.print('Done!')
             return False
 
