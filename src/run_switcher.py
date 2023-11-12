@@ -37,13 +37,17 @@ class Switcher:
 
     def execute(self):
         builder_branches = self._extract_branches()
-        branch_filter = BranchFilter(
-            custom_branches=builder_branches,
-            initial_input=self._initial_input,
-            input_provider=self._input_provider,
-            cwd=self._cwd,
-        )
-        checkout_branch = branch_filter.find_one()
+        if self._initial_input and self._initial_input in builder_branches:
+            # we already got exact match!
+            checkout_branch = self._initial_input
+        else:
+            branch_filter = BranchFilter(
+                custom_branches=builder_branches,
+                initial_input=self._initial_input,
+                input_provider=self._input_provider,
+                cwd=self._cwd,
+            )
+            checkout_branch = branch_filter.find_one()
         print(f'-> Checkout target "{checkout_branch}" with message: "{branch_filter.head_commits[checkout_branch]}"')
         if self._current_branch == checkout_branch:
             print('Already there. Skipping checkout!')
