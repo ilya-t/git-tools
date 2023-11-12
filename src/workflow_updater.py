@@ -53,11 +53,14 @@ class WorkflowBuilder:
                 print('Please commit or stash changes before building!')
                 return
         self.log('\n==== Updating branches at: {} ===='.format(self.cwd))
+        self.process_items(self.config)
+
+    def process_items(self, config_items: []):
         affected = []
 
         flow_start = datetime.datetime.now()
 
-        for item in self.config:
+        for item in config_items:
             target_branch: str = item[OUTPUT]
             basement_branch: str = item[BASEMENT]
             contents: [object] = item[BRANCH_CONTENTS]
@@ -189,7 +192,6 @@ class WorkflowBuilder:
         print('Returning back...')
         os.system('git checkout ' + current_branch)
 
-
     def capture_current_branch(self) -> str:
         cmd = 'git rev-parse --abbrev-ref HEAD'
         output = subprocess.check_output(cmd, cwd=self.cwd, universal_newlines=True, shell=True)
@@ -280,3 +282,14 @@ if __name__ == '__main__':
         quiet=args.quiet
     ).start()
 pass
+
+
+def filter_affected(branch: str, config: [{}]) -> [{}]:
+    results = []
+    for c in config:
+        if c['basement_branch'] == branch:
+            results.append(c)
+
+    for r in results:
+        results.extend(filter_affected(branch=r['output_branch'], config=config))
+    return results

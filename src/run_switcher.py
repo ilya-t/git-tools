@@ -23,6 +23,7 @@ class Switcher:
         self._dry_run = dry_run
         self._initial_input = initial_input
         self._input_provider = input_provider
+        self._current_branch = self._get_current_branch()
 
         if workflow_config and os.path.exists(workflow_config):
             self._builder = workflow_updater.WorkflowBuilder(
@@ -43,10 +44,8 @@ class Switcher:
             cwd=self._cwd,
         )
         checkout_branch = branch_filter.find_one()
-        current_branch = self._get_current_branch()
-
         print(f'-> Checkout target "{checkout_branch}" with message: "{branch_filter.head_commits[checkout_branch]}"')
-        if current_branch == checkout_branch:
+        if self._current_branch == checkout_branch:
             print('Already there. Skipping checkout!')
             return
         print('-> Checking diff')
@@ -132,7 +131,11 @@ class Switcher:
 
     def _checkout(self, branch: str):
         if self._builder:
-            self._builder.start()
+            affected = workflow_updater.filter_affected(branch=self._current_branch, config=self._builder.config)
+            update_list = list(map(lambda e: e['output_branch'], affected))
+            print(f'-> Going to update dependent branches: {update_list}')
+            if len(affected) > 0:
+                self._builder.process_items(affected)
         print('-> Checking out')
         if not DRY_RUN:
             print(self._capture_output('git checkout '+branch))

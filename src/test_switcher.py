@@ -9,13 +9,15 @@ class TestSwitcher(testenv.RepoTestCase):
     def setUp(self):
         super().setUp()
         self.input_queue = Queue()
+        self.under_test = self.create_sut()
 
-        self.under_test = Switcher(cwd=testenv.REPO_DIR,
-                                   initial_input=None,
-                                   workflow_config=testenv.REPO_DIR + '/../single_base_workspace.yml',
-                                   input_provider=lambda: self.pop_input(),
-                                   dry_run=False,
-                                   )
+    def create_sut(self):
+        return Switcher(cwd=testenv.REPO_DIR,
+                        initial_input=None,
+                        workflow_config=testenv.REPO_DIR + '/../single_base_workspace.yml',
+                        input_provider=lambda: self.pop_input(),
+                        dry_run=False,
+                        )
 
     def test_basic_switching(self):
         self.set_input('dev')
@@ -33,7 +35,7 @@ class TestSwitcher(testenv.RepoTestCase):
         self.repo_helper.amend(branch=None, amended_file='dev_file')
 
         self.set_input('feature_1')
-        self.under_test.execute()
+        self.create_sut().execute()
         self.repo_helper.assertOnBranch('feature_1')
         self.repo_helper.assertFileAmended('dev_file')
 
