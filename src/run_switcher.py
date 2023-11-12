@@ -29,6 +29,7 @@ class Switcher:
                 yaml_config=workflow_config,
                 cwd=cwd,
                 dry_run=dry_run,
+                quiet=True,
             )
         else:
             self._builder = None
@@ -130,6 +131,8 @@ class Switcher:
             raise commit_exception
 
     def _checkout(self, branch: str):
+        if self._builder:
+            self._builder.start()
         print('-> Checking out')
         if not DRY_RUN:
             print(self._capture_output('git checkout '+branch))
