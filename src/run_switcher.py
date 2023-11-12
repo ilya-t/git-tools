@@ -24,6 +24,9 @@ class Switcher:
         self._initial_input = initial_input
         self._input_provider = input_provider
         self._current_branch = self._get_current_branch()
+        # soft reset is disabled cause it will generate longer checkouts
+        # under heavy repositories.
+        self._soft_reset_after_checkout = False
 
         if workflow_config and os.path.exists(workflow_config):
             self._builder = workflow_updater.WorkflowBuilder(
@@ -66,10 +69,7 @@ class Switcher:
             print('-> No uncommited diff. Skipping')
 
         self._checkout(checkout_branch)
-        # TODO
-        # if len(args) > 1:
-        #     depth = int(args[1])
-        #     self._soft_reset(depth)
+        self._try_soft_reset()
 
         print('-> Done!')
 
@@ -145,16 +145,17 @@ class Switcher:
         if not DRY_RUN:
             print(self._capture_output('git checkout '+branch))
 
-    def _soft_reset(self, depth: int):
-        if depth <= 0:
+    def _try_soft_reset(self):
+        if not self._soft_reset_after_checkout:
             return
-        dst = f'HEAD~{depth}'
+        if not self._builder:
+            return
+        dst = f'HEAD~1'
         print(f'-> Soft reset to {dst}')
 
         if not DRY_RUN:
             print(self._capture_output(f'git reset --soft {dst}'))
-        print('Done! Your head is at:')
-        print(self._capture_output(f'git log -1'))
+        print('Done!')
 
     def _resolve_head_message(self, branch_config_item: {}) -> str:
         if not branch_config_item:
