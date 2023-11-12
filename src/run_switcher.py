@@ -55,9 +55,10 @@ class Switcher:
             print('-> No uncommited diff. Skipping')
 
         self._checkout(checkout_branch)
-        if len(args) > 1:
-            depth = int(args[1])
-            self._soft_reset(depth)
+        # TODO
+        # if len(args) > 1:
+        #     depth = int(args[1])
+        #     self._soft_reset(depth)
 
         print('-> Done!')
 
