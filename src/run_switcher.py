@@ -9,17 +9,20 @@ from branch_filter import BranchFilter
 execution_location_path = os.path.abspath('')
 DRY_RUN = False
 
+
 class Switcher:
     def __init__(self,
                  dry_run: bool,
                  initial_input: str,
                  workflow_config: str,
+                 input_provider=lambda: input().lower(),
                  cwd: str = execution_location_path,
                  ) -> None:
         super().__init__()
         self._cwd = cwd
         self._dry_run = dry_run
         self._initial_input = initial_input
+        self._input_provider = input_provider
 
         if workflow_config and os.path.exists(workflow_config):
             self._builder = workflow_updater.WorkflowBuilder(
@@ -34,7 +37,10 @@ class Switcher:
         builder_branches = self._extract_branches()
         branch_filter = BranchFilter(
             custom_branches=builder_branches,
-            initial_input=self._initial_input)
+            initial_input=self._initial_input,
+            input_provider=self._input_provider,
+            cwd=self._cwd,
+        )
         checkout_branch = branch_filter.find_one()
         current_branch = self._get_current_branch()
 

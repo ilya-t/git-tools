@@ -39,6 +39,7 @@ def capture_cmd_output(command):
 class RepoTestCase(unittest.TestCase):
     def setUp(self):
         self._repo_helper = RepoHelper(self, REPO_DIR)
+        self.repo_helper = self._repo_helper
         self.cleanup()
         self.init_repo()
         self.assertTrue(os.path.exists(REPO_DIR + '/README.md'))
@@ -106,11 +107,19 @@ class RepoHelper:
                 #     print(p.stdout.readlines())    
 
     def amend(self, branch: str, amended_file: str):
+        if branch:
+            self.run_cmd("git checkout " + branch)
         self.run_cmd(
-            "git checkout " + branch,
             "echo '" + amended_file + " file amended!' > " + amended_file,
             "git commit --all --amend --message 'amended " + amended_file + "'",
         )
+
+    def assertOnBranch(self, branch: str):
+        current = self._capture_output('git branch --show-current').removesuffix('\n')
+        self._test_case.assertEqual(branch, current)
+
+    def _capture_output(self, cmd: str) -> str:
+        return subprocess.check_output(cmd, cwd=REPO_DIR, universal_newlines=True, shell=True)
 
     def assertCommitMessage(self, branch: str, expected_message: str):
         self.run_cmd('git checkout ' + branch)
