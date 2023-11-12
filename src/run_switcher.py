@@ -40,6 +40,7 @@ class Switcher:
         if self._initial_input and self._initial_input in builder_branches:
             # we already got exact match!
             checkout_branch = self._initial_input
+            print(f'-> Checkout target "{checkout_branch}"')
         else:
             branch_filter = BranchFilter(
                 custom_branches=builder_branches,
@@ -48,7 +49,7 @@ class Switcher:
                 cwd=self._cwd,
             )
             checkout_branch = branch_filter.find_one()
-        print(f'-> Checkout target "{checkout_branch}" with message: "{branch_filter.head_commits[checkout_branch]}"')
+            print(f'-> Checkout target "{checkout_branch}" with message: "{branch_filter.head_commits[checkout_branch]}"')
         if self._current_branch == checkout_branch:
             print('Already there. Skipping checkout!')
             return
@@ -136,9 +137,9 @@ class Switcher:
     def _checkout(self, branch: str):
         if self._builder:
             affected = workflow_updater.filter_affected(branch=self._current_branch, config=self._builder.config)
-            update_list = list(map(lambda e: e['output_branch'], affected))
-            print(f'-> Going to update dependent branches: {update_list}')
             if len(affected) > 0:
+                update_list = list(map(lambda e: e['output_branch'], affected))
+                print(f'-> Going to update dependent branches: {update_list}')
                 self._builder.process_items(affected)
         print('-> Checking out')
         if not DRY_RUN:
