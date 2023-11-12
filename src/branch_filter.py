@@ -13,10 +13,13 @@ class BranchFilter:
                  custom_branches: [str] = None, # custom list of real branches
                  synthetic_branches: [dict] = None, # custom not existent branches
                  input_provider=lambda: input().lower(),
-                 cwd=os.path.abspath('')):
+                 cwd=os.path.abspath(''),
+                 initial_input:str=None):
         self.cwd = cwd
         self.provide_input = input_provider
         self.all_branches: list[str] = []
+        self._initial_input = initial_input
+        self._flow_initial_input = None
         branches_str = self.capture_output('git branch')
 
         if custom_branches:
@@ -61,6 +64,7 @@ class BranchFilter:
         self.selected_branches.extend(selected)
 
     def find_many(self):
+        self._flow_initial_input = self._initial_input
         self.run_flow(
             flow_message=lambda: self.print_remains_and_selected(),
             input_handler=lambda input: self.add_remaining_and_check_input(input),
@@ -70,6 +74,7 @@ class BranchFilter:
         return self.selected_branches
 
     def find_one(self):
+        self._flow_initial_input = self._initial_input
         self.run_flow(
             flow_message=lambda: self.print_remains_or_selected(),
             input_handler=lambda input: self.find_single_branch(input),
@@ -79,9 +84,12 @@ class BranchFilter:
         return self.selected_branches[0]
 
     def run_flow(self, flow_message, input_handler, finish_criterion):
-        flow_message()
-
-        input_handler(self.provide_input().lower())
+        if self._flow_initial_input:
+            input_handler(self._flow_initial_input.lower())
+            self._flow_initial_input = None
+        else: 
+            flow_message()
+            input_handler(self.provide_input().lower())
 
         if finish_criterion():
             return

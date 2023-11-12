@@ -11,13 +11,6 @@ from queue import Queue
 execution_location_path = os.path.abspath('')
 DRY_RUN=False
 
-def mixed_input(params_queue):
-    if params_queue.empty():
-        return input().lower()
-    item = params_queue.get()
-    return item
-
-
 def extract_branches(builder_config) -> list[str]:
     return list(map(lambda e: e['output_branch'], builder_config))
 
@@ -150,11 +143,9 @@ def main(args):
             custom_branches=builder_branches
         )
     else:
-        arg_queue = Queue()
-        for arg in args:
-            arg_queue.put(arg)
-
-        branch_filter = BranchFilter(custom_branches=builder_branches, input_provider=lambda: mixed_input(arg_queue))
+        branch_filter = BranchFilter(
+            custom_branches=builder_branches, 
+            initial_input=' '.join(args))
 
     checkout_branch = branch_filter.find_one()
     current_branch = get_current_branch()
