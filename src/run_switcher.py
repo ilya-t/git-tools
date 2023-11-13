@@ -59,7 +59,7 @@ class Switcher:
         print('-> Checking diff')
         diff = self._capture_output('git diff HEAD')
         if len(diff) > 0:
-            branch_config = self._resolve_head_branch_config_item(current_branch)
+            branch_config = self._resolve_head_branch_config_item(self._current_branch)
             expected_message = self._resolve_head_message(branch_config)
             self._commit(
                 message=expected_message,
