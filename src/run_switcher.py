@@ -123,6 +123,7 @@ class Switcher:
         commit_exception = None
         try:
             if not DRY_RUN:
+                message = message.replace(' ', '\ ')
                 print(self._capture_output(f'git commit --no-verify  --all --message "{message}" {amend_arg}'))
         except Exception as e:
             commit_exception = e
