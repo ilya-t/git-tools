@@ -77,7 +77,8 @@ class Switcher:
         if not self._builder:
             return []
         builder_config = self._builder.config
-        return list(map(lambda e: e['output_branch'], builder_config))
+        output_branches = map(lambda e: e['output_branch'], builder_config)
+        return list(filter(lambda b: b != self._current_branch, output_branches)) # maybe keep current branch but change its message or mark it somehow?
 
     def _get_current_branch(self) -> str:
         return self._capture_output('git branch --show-current').removesuffix('\n')
