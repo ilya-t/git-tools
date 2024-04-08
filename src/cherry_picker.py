@@ -178,6 +178,9 @@ class Picker:
             if fallback is None:
                 raise Exception('shell command failed: ' + command + '\n with: ' + error.__str__())
             else:
+                for line in error:
+                    self.print(line)
+
                 return fallback()
         else:
             return result
